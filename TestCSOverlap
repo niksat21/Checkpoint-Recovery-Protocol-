@@ -1,0 +1,15 @@
+import sys
+
+with open(sys.argv[1], 'r') as f:
+    x= f.readlines()
+    last="Leave"
+    for i in x:
+        if last!=i.split(" ")[8]:
+            last=i.split(" ")[8]
+        else:
+            print "issue"
+
+
+# 18:15:04.768 [server-thread] DEBUG com.aos.lab1.Server - Critical section : Enter 0
+# 18:15:04.768 [server-thread] DEBUG com.aos.lab1.Server - Critical section : Enter 1
+# 18:15:04.768 [server-thread] DEBUG com.aos.lab1.Server - Critical section : End 1
