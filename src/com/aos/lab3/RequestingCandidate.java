@@ -1,4 +1,4 @@
-package com.aos.lab2;
+package com.aos.lab3;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

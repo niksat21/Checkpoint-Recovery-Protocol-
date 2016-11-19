@@ -1,4 +1,4 @@
-package com.aos.lab2;
+package com.aos.lab3;
 
 public enum DeadlockResolverType {
 

@@ -1,4 +1,4 @@
-package com.aos.lab2;
+package com.aos.lab3;
 
 import java.io.ByteArrayInputStream;
 import com.sun.nio.sctp.SctpServerChannel;
