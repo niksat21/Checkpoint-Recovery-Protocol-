@@ -11,12 +11,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class ConfigParser {
 
-	// private String fileLocation = System.getProperty("config",
-	// "C://Fall16/AOS/Project/Project2/config.txt");
-	private String fileLocation = System.getProperty("config", "conf/config.txt");
+	private static Logger logger = LogManager.getLogger(ConfigParser.class);
 
+	private String fileLocation = System.getProperty("config", "conf/config.txt");
 	private Config config;
 
 	public ConfigParser() throws IOException {
@@ -27,11 +29,12 @@ public class ConfigParser {
 		List<String> fileContent = Files.readAllLines(Paths.get(fileLocation));
 		Iterator<String> iterator = fileContent.iterator();
 		List<Node> nodes = new LinkedList<Node>();
-		Map<Integer, Set<Integer>> nodeIdVsQuorum = new HashMap<Integer, Set<Integer>>();
-		int noOfNodes;
-		int csExecTime;
-		int waitTime;
-		int noOfAttempts;
+		Map<Integer, Set<Integer>> nodeIdVsNeighbors = new HashMap<Integer, Set<Integer>>();
+		Integer noOfNodes;
+		Integer noOfOperations;
+		Integer minInstanceDelay;
+		Integer minSendDelay;
+		Integer noOfMsgs;
 
 		String line = getNextLine(iterator);
 
@@ -42,9 +45,10 @@ public class ConfigParser {
 
 		String[] val = line.split(" ");
 		noOfNodes = Integer.valueOf(val[0]);
-		csExecTime = Integer.valueOf(val[2]);
-		waitTime = Integer.valueOf(val[1]);
-		noOfAttempts = Integer.valueOf(val[3]);
+		noOfOperations = Integer.valueOf(val[1]);
+		minInstanceDelay = Integer.valueOf(val[2]);
+		minSendDelay = Integer.valueOf(val[3]);
+		noOfMsgs = Integer.valueOf(val[4]);
 
 		line = getNextLine(iterator);
 
@@ -62,9 +66,8 @@ public class ConfigParser {
 			i++;
 		}
 
-		for (int i = 0; i < noOfNodes; line = getNextLine(iterator)) {
+		for (int i = 0; i < noOfNodes;) {
 			// Ignore comments
-
 			if (line.startsWith("#") || line.isEmpty())
 				continue;
 			line = line.trim();
@@ -72,16 +75,39 @@ public class ConfigParser {
 			String[] split = line.split(" ");
 			int j = 1;
 			Integer nodeId = Integer.valueOf(split[0]);
-			Set<Integer> quorum = new TreeSet<Integer>();
+			Set<Integer> neighbhors = new TreeSet<Integer>();
 
 			for (; j < split.length; j++) {
-				quorum.add(Integer.valueOf(split[j].trim()));
+				neighbhors.add(Integer.valueOf(split[j].trim()));
 			}
 
-			nodeIdVsQuorum.put(nodeId, quorum);
+			nodeIdVsNeighbors.put(nodeId, neighbhors);
 			i++;
+			if (i < noOfNodes)
+				line = getNextLine(iterator);
 		}
-		config = new Config(noOfNodes, csExecTime, waitTime, noOfAttempts, nodes, nodeIdVsQuorum);
+
+		List<Operation> operations = new LinkedList<Operation>();
+
+		while (iterator.hasNext()) {
+			line = getNextLine(iterator);
+			if (line == null)
+				break;
+			String[] split = line.split(",");
+			Character opr = split[0].charAt(1);
+			Integer nodeId = Integer.valueOf(split[1].substring(0, 1));
+			OperationType oprType = null;
+			if (opr.charValue() == 'C' || opr.charValue() == 'c') {
+				oprType = OperationType.CHECKPOINT;
+			} else if (opr.charValue() == 'R' || opr.charValue() == 'r') {
+				oprType = OperationType.RECOVERY;
+			} else {
+				logger.error("Unsupported operation type: {}", opr);
+			}
+			operations.add(new Operation(oprType, nodeId));
+		}
+		config = new Config(noOfNodes, noOfOperations, minInstanceDelay, minSendDelay, noOfMsgs, nodes,
+				nodeIdVsNeighbors, operations);
 	}
 
 	private String getNextLine(Iterator<String> iterator) {
@@ -97,19 +123,6 @@ public class ConfigParser {
 		return line;
 	}
 
-	private List<Integer> parsePath(String string) {
-		List<Integer> path = new LinkedList<Integer>();
-		String[] split = string.split(",");
-
-		path.add(Integer.valueOf(split[0].split("\\(")[1].trim()));
-		for (int i = 1; i < split.length - 1; i++) {
-			path.add(Integer.valueOf(split[i].trim()));
-		}
-
-		path.add(Integer.valueOf(split[split.length - 1].split("\\)")[0].trim()));
-		return path;
-	}
-
 	public Config getConfig() {
 		return config;
 	}
@@ -118,10 +131,9 @@ public class ConfigParser {
 		try {
 			ConfigParser parser = new ConfigParser();
 			Config config2 = parser.getConfig();
-
+			System.out.println("Done");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e);
 		}
 	}
 

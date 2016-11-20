@@ -1,6 +1,5 @@
 package com.aos.lab3;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -8,94 +7,56 @@ import java.util.Set;
 
 public class Config {
 
-	private int noOfNodes;
-	private int csExecTime;
-	private int waitTime;
-	private int noOfAttempts;
+	private Integer noOfNodes;
+	private Integer noOfOperations;
+	private Integer minInstanceDelay;
+	private Integer minSendDelay;
+	private Integer noOfMsgs;
+
 	private List<Node> nodes = new LinkedList<Node>();
-	private Map<Integer, Set<Integer>> nodeIdVsQuorum = new HashMap<Integer, Set<Integer>>();
-	private Map<Integer, Node> nodeIdVsNodes = new HashMap<Integer, Node>();
+	private Map<Integer, Set<Integer>> nodeIdVsNeighbors;
+	private List<Operation> operations;
 
-	private DeadlockResolverType version = null;
-
-	public Config(int noOfNodes, int csExecTime, int waitTime, int noOfAttempts, List<Node> nodes,
-			Map<Integer, Set<Integer>> nodeIdVsQuorum) {
+	public Config(Integer noOfNodes, Integer noOfOperations, Integer minInstanceDelay, Integer minSendDelay,
+			Integer noOfMsgs, List<Node> nodes, Map<Integer, Set<Integer>> nodeIdVsNeighbors,
+			List<Operation> operations) {
 		super();
 		this.noOfNodes = noOfNodes;
-		this.csExecTime = csExecTime;
-		this.waitTime = waitTime;
-		this.noOfAttempts = noOfAttempts;
+		this.noOfOperations = noOfOperations;
+		this.minInstanceDelay = minInstanceDelay;
+		this.minSendDelay = minSendDelay;
+		this.noOfMsgs = noOfMsgs;
 		this.nodes = nodes;
-		this.nodeIdVsQuorum = nodeIdVsQuorum;
-		populateNodeIdVsNodesMap();
+		this.nodeIdVsNeighbors = nodeIdVsNeighbors;
+		this.operations = operations;
 	}
 
-	private void populateNodeIdVsNodesMap() {
-		for (Node node : nodes) {
-			nodeIdVsNodes.put(node.getNodeId(), node);
-		}
-	}
-
-	public int getNoOfNodes() {
+	public Integer getNoOfNodes() {
 		return noOfNodes;
 	}
 
-	public int getCsExecTime() {
-		return csExecTime;
+	public Integer getNoOfOperations() {
+		return noOfOperations;
 	}
 
-	public int getWaitTime() {
-		return waitTime;
+	public Integer getMinInstanceDelay() {
+		return minInstanceDelay;
 	}
 
-	public int getNoOfAttempts() {
-		return noOfAttempts;
+	public Integer getMinSendDelay() {
+		return minSendDelay;
+	}
+
+	public Integer getNoOfMsgs() {
+		return noOfMsgs;
 	}
 
 	public List<Node> getNodes() {
 		return nodes;
 	}
 
-	public Set<Integer> getNodeQuorumById(Integer id) {
-		return nodeIdVsQuorum.get(id);
+	public Map<Integer, Set<Integer>> getNodeIdVsQuorum() {
+		return nodeIdVsNeighbors;
 	}
-
-	public Node getNodeById(Integer id) {
-		return nodeIdVsNodes.get(id);
-	}
-
-	public DeadlockResolverType getVersion() {
-		return version;
-	}
-
-	public void setVersion(DeadlockResolverType version) {
-		this.version = version;
-	}
-
-	// public Boolean checkIntersection() {
-	// int counter = 0;
-	// for (Integer i : nodeIdVsQuorum.keySet()) {
-	// Set<Integer> first = new ArrayList<>();
-	// first = nodeIdVsQuorum.get(i);
-	// int tempc = 1;
-	// for (Integer j : nodeIdVsQuorum.keySet()) {
-	// List<Integer> temp = new ArrayList<>();
-	// if (i != j) {
-	// for (int m = 0; m < nodeIdVsQuorum.get(j).size(); m++)
-	// temp.add(nodeIdVsQuorum.get(j).get(m));
-	// temp.retainAll(first);
-	// if (temp.size() > 0)
-	// tempc++;
-	// }
-	// }
-	// if (tempc == noOfNodes) {
-	// counter++;
-	// }
-	// }
-	// if (counter == noOfNodes)
-	// return true;
-	// else
-	// return false;
-	// }
 
 }
