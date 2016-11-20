@@ -1,7 +1,6 @@
 package com.aos.lab3;
 
 import java.io.ByteArrayInputStream;
-import com.sun.nio.sctp.SctpServerChannel;
 import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
@@ -10,16 +9,17 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.aos.lab2.Server.AssociationHandler;
+import com.aos.lab3.Server.AssociationHandler;
 import com.sun.nio.sctp.MessageInfo;
 import com.sun.nio.sctp.SctpChannel;
+import com.sun.nio.sctp.SctpServerChannel;
 
 public class ServerWorker implements Runnable {
 
 	private volatile static Set<Integer> completedSet = new HashSet<Integer>();
 	public volatile static Boolean isCompleted = Boolean.FALSE;
 	private volatile static int result = -1;
-	private volatile static int completeMessageCount=0;
+	private volatile static int completeMessageCount = 0;
 	private volatile static Integer noOfNodes;
 
 	private Logger logger = LogManager.getLogger(ServerWorker.class);
@@ -45,7 +45,7 @@ public class ServerWorker implements Runnable {
 		this.quorumRequestHandler = quorumRequestHandler;
 		this.csHandler = csHandler;
 		this.ssc = ssc;
-		noOfNodes= config.getNoOfNodes();
+		noOfNodes = config.getNoOfNodes();
 	}
 
 	@Override
@@ -82,14 +82,14 @@ public class ServerWorker implements Runnable {
 				} else if (msg.getMsgType().equals(MessageType.INQUIRE)) {
 					csHandler.handleInquireMessage(msg.getSource());
 				} else if (msg.getMsgType().equals(MessageType.COMPLETED)) {
-						handleCompleteMessage(msg.getSource());
-						logger.error("Received COMPLETED at:{} from:{} ", msg.getSource(), msg.getDestination());
+					handleCompleteMessage(msg.getSource());
+					logger.error("Received COMPLETED at:{} from:{} ", msg.getSource(), msg.getDestination());
 				} else {
 					logger.error("Unsupported message type : {} by the quorum handler", msg.getMsgType().toString());
 				}
 			}
 		} catch (Exception e) {
-			//logger.error("Exception in Server Worker thread", e);
+			// logger.error("Exception in Server Worker thread", e);
 		}
 	}
 
@@ -106,9 +106,9 @@ public class ServerWorker implements Runnable {
 		json = json.substring(1);
 		System.out.println(json);
 	}
-	
-		public void handleCompleteMessage(Integer src) throws InterruptedException {
-			synchronized(ServerWorker.class) {
+
+	public void handleCompleteMessage(Integer src) throws InterruptedException {
+		synchronized (ServerWorker.class) {
 			completeMessageCount++;
 			if ((completeMessageCount + 1 == noOfNodes) && isCompleted) {
 				shutdown();
@@ -116,15 +116,15 @@ public class ServerWorker implements Runnable {
 				Thread.sleep(1000);
 				System.exit(0);
 			}
-			}
 		}
-	
-		public void shutdown() {
-			try {
-				sc.close();
-				ssc.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+	}
+
+	public void shutdown() {
+		try {
+			sc.close();
+			ssc.close();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
+	}
 }
