@@ -1,6 +1,6 @@
 package com.aos.lab3;
 
-public interface IQuorumRequestHandler {
+public interface ICheckpointRequestHandler {
 
 	public void handleYieldMessage(Integer sourceNodeId);
 

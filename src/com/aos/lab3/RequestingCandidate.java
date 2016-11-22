@@ -10,18 +10,25 @@ public class RequestingCandidate {
 	private Config config;
 	private Integer nodeId;
 	private Client client;
-	private ICriticalSectionHandler csHandler;
-	private IQuorumRequestHandler quroumRequestHandler;
+	private IRecoveryRequestHandler iRecovereHandler;
+	private ICheckpointRequestHandler iCheckpointHandler;
 	
-	public RequestingCandidate(Config config, Integer nodeId, Client client, ICriticalSectionHandler csHandler, IQuorumRequestHandler quroumRequestHandler) {
+	public RequestingCandidate(Config config, Integer nodeId, Client client, ICheckpointRequestHandler iCheckpointHandler) {
 		this.config = config;
 		this.nodeId = nodeId;
 		this.client = client;
-		this.csHandler = csHandler;
-		this.quroumRequestHandler = quroumRequestHandler;
+		this.iCheckpointHandler = iCheckpointHandler;
 	}
 
-	public void requestCS() throws InterruptedException {
+	public RequestingCandidate(Config config2, Integer nodeId2, Client client2, IRecoveryRequestHandler iRecovereHandler) {
+		// TODO Auto-generated constructor stub
+		this.config = config;
+		this.nodeId = nodeId;
+		this.client = client;
+		this.iRecovereHandler = iRecovereHandler;
+	}
+
+	public void requestCheckpoint() throws InterruptedException {
 		int count = 0;
 		int noOfRequests = config.getNoOfAttempts();
 		Node node = config.getNodeById(nodeId);

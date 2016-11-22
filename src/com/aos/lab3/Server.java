@@ -21,18 +21,18 @@ public class Server implements Runnable {
 	private Integer nodeId;
 	private Integer labelValue;
 	private Config config;
-	private IQuorumRequestHandler quorumRequestHandler;
-	private ICriticalSectionHandler csHandler;
+	private ICheckpointRequestHandler iCheckpointHandler;
+	private IRecoveryRequestHandler iRecoveryHandler;
 	private SctpChannel sc;
 
 	public Server(Integer nodeId, Integer labelValue, Integer port, Config config,
-			IQuorumRequestHandler quorumRequestHandler, ICriticalSectionHandler csHandler) {
+			ICheckpointRequestHandler iCheckpointHandler, IRecoveryRequestHandler iRecoveryHandler) {
 		this.nodeId = nodeId;
 		this.labelValue = labelValue;
 		this.port = port;
 		this.config = config;
-		this.quorumRequestHandler = quorumRequestHandler;
-		this.csHandler = csHandler;
+		this.iCheckpointHandler = iCheckpointHandler;
+		this.iRecoveryHandler = iRecoveryHandler;
 	}
 
 	@Override

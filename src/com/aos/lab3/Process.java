@@ -1,8 +1,9 @@
 package com.aos.lab3;
 
 import java.net.InetAddress;
+import java.util.Iterator;
 import java.util.Random;
-
+import java.lang.reflect.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,31 +21,12 @@ public class Process {
 
 			String version = System.getProperty("version");
 
-			if (version.equals("holdandwait")) {
-				config.setVersion(DeadlockResolverType.HOLD_AND_WAIT);
-			} else if (version.equals("preemptive")) {
-				config.setVersion(DeadlockResolverType.PREEMPTIVE);
-			} else {
-				logger.error("Unsupported version: {}", version);
-			}
-
 			String hostname = InetAddress.getLocalHost().getHostName();
 			nodeId = Integer.valueOf(System.getProperty("nodeId"));
 			logger.info("Hostname:{} NodeId:{} Label value:{}", hostname, nodeId, labelValue);
-			Node node = config.getNodeById(nodeId);
-
-			IQuorumRequestHandler quroumRequestHandler = null;
-			ICriticalSectionHandler csHandler = null;
-			if (config.getVersion().equals(DeadlockResolverType.HOLD_AND_WAIT)) {
-				quroumRequestHandler = new HoldAndWaitQuorumRequestHandler(node, config);
-				csHandler = new HoldAndWaitCSHandler(config, node, config.getNodeQuorumById(node.getNodeId()));
-			} else if (config.getVersion().equals(DeadlockResolverType.PREEMPTIVE)) {
-				quroumRequestHandler = new PreemptiveQuorumRequestHandler(node, config);
-				csHandler = new PreemptiveCSHandler(config, node, config.getNodeQuorumById(nodeId));
-			} else {
-				logger.error("Unsupported config version: {}", config.getVersion().toString());
-			}
-
+			Node node = config.getNodes().get(nodeId);
+			
+			//starting servers
 			Server server = new Server(nodeId, labelValue, node.getPort(), config, quroumRequestHandler, csHandler);
 			Client client = new Client(hostname, labelValue, config, nodeId);
 			server.setClientHandler(client);
@@ -56,12 +38,25 @@ public class Process {
 			serverThread.start();
 
 			Thread.sleep(10000);
-
-			if (config.getNodeQuorumById(nodeId).size() != 0) {
-				RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, csHandler, quroumRequestHandler);
-				rc.requestCS();
+			
+			//Iterating through the list of operations
+			ICheckpointRequestHandler cRequestHandler = null;
+			IRecoveryRequestHandler rRequestHandler = null;
+			
+			Iterator itr = config.operations.iterator();
+			Operation opr= null;
+			while(itr.hasNext()){
+				opr = (Operation) itr.next();
+				if (opr.getNodeId() == nodeId && opr.getType().equals(OperationType.CHECKPOINT)) {
+					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, cRequestHandler);
+					rc.requestCheckpoint();
+				}
+				else if(opr.getNodeId() == nodeId && opr.getType().equals(OperationType.RECOVERY)) {
+					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, rRequestHandler);
+					rc.requestRecovery();
+				}
 			}
-
+			
 		} catch (Exception e) {
 			logger.error("Exception in Process", e);
 		}

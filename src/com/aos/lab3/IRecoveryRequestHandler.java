@@ -1,6 +1,6 @@
 package com.aos.lab3;
 
-public interface ICriticalSectionHandler {
+public interface IRecoveryRequestHandler {
 
 	public void csEnter(Long timestamp) throws InterruptedException;
 
