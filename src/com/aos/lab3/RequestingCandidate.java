@@ -3,6 +3,8 @@ package com.aos.lab3;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Iterator;
+
 public class RequestingCandidate {
 
 	private static final Logger logger = LogManager.getLogger(RequestingCandidate.class);
@@ -29,34 +31,56 @@ public class RequestingCandidate {
 	}
 
 	public void requestCheckpoint() throws InterruptedException {
-		int count = 0;
-		int noOfRequests = config.getNoOfAttempts();
-		Node node = config.getNodeById(nodeId);
-		// sleep for some random time before making request for CS
-		Thread.sleep(getExpoRandom(config.getWaitTime()));
+//
+//		while(true){
+//			Thread.sleep(500);
+//			//checking if all the queues are empty
+//			if(quroumRequestHandler.checkRequestingQueue() && csHandler.checkSets() ){
+//				//start broadcasting complete message
+//				ServerWorker.isCompleted = Boolean.TRUE;
+//				client.broadcastCompletionMsg();
+//				break;
+//			}
+//		}
 
-		while (count < noOfRequests) {
-			logger.debug("noOfRequests :{} count:{} ", noOfRequests, count);
-			long timestamp = System.currentTimeMillis();
-			csHandler.csEnter(timestamp);
-			logger.info("Critical Section: Enter NodeId:{} Request TS:{}", node.getNodeId(), timestamp);
+		int appCount=0,ctrlCount=0;
+		long timeToSend=0;
 
-			// sleep till CS is executed
-			Thread.sleep(getExpoRandom(config.getCsExecTime()));
-			csHandler.csLeave();
-			logger.info("Critical Section: Leave NodeId:{}", node.getNodeId());
-			count++;
-		}
-		while(true){
-			Thread.sleep(500);
-			//checking if all the queues are empty
-			if(quroumRequestHandler.checkRequestingQueue() && csHandler.checkSets() ){
-				//start broadcasting complete message
-				ServerWorker.isCompleted = Boolean.TRUE;
-				client.broadcastCompletionMsg();
-				break;
+
+		while(ctrlCount<=config.getNoOfOperations() && ctrlCount<=config.getNoOfMsgs()){
+			timeToSend = System.currentTimeMillis();
+			if(!isOpearationRunning){									//if no operation is currently running in system then only send app msgs
+				while(timeToSend<=(timeToSend+getExpoRandom(config.getMinInstanceDelay()))){
+					appCount++;
+					Thread.sleep(config.getMinSendDelay());				//sleep before seding application msg
+
+					//send application message
+
+					timeToSend=System.currentTimeMillis();
+				}
 			}
+			Iterator<Operation> it = config.getOperationsList().iterator();
+			if(nodeId==it.node){
+				//send checkpoint / rec req and carry out whole check/recov procedure
+
+ 			}
+ 			else{
+				while (true){
+					Thread.sleep(10);
+					if(//get opComplete msg from initiator)
+						break;
+				}
+				it.next();
+			}
+
 		}
+		while(ctrlCount<=config.getNoOfMsgs()){
+				//just send application msgs
+		}
+		while(ctrlCount<=config.getNoOfOperations()){
+			//perform operations with some instance delay
+		}
+
 	}
 
 	private static int getExpoRandom(int mean) {

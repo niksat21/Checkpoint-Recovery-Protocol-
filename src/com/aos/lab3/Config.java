@@ -15,11 +15,12 @@ public class Config {
 
 	private List<Node> nodes = new LinkedList<Node>();
 	private Map<Integer, Set<Integer>> nodeIdVsNeighbors;
-	public List<Operation> operations;
+	private List<Operation> operations;
+
 
 	public Config(Integer noOfNodes, Integer noOfOperations, Integer minInstanceDelay, Integer minSendDelay,
-			Integer noOfMsgs, List<Node> nodes, Map<Integer, Set<Integer>> nodeIdVsNeighbors,
-			List<Operation> operations) {
+				  Integer noOfMsgs, List<Node> nodes, Map<Integer, Set<Integer>> nodeIdVsNeighbors,
+				  List<Operation> operations) {
 		super();
 		this.noOfNodes = noOfNodes;
 		this.noOfOperations = noOfOperations;
@@ -55,8 +56,10 @@ public class Config {
 		return nodes;
 	}
 
-	public Map<Integer, Set<Integer>> getNodeIdVsQuorum() {
+	public Map<Integer, Set<Integer>> getNodeIdVsNeighbors() {
 		return nodeIdVsNeighbors;
 	}
+
+	public List<Operation> getOperationsList() { return operations; }
 
 }

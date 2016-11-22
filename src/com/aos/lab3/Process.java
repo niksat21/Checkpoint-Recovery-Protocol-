@@ -47,14 +47,17 @@ public class Process {
 			Operation opr= null;
 			while(itr.hasNext()){
 				opr = (Operation) itr.next();
-				if (opr.getNodeId() == nodeId && opr.getType().equals(OperationType.CHECKPOINT)) {
-					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, cRequestHandler);
-					rc.requestCheckpoint();
-				}
-				else if(opr.getNodeId() == nodeId && opr.getType().equals(OperationType.RECOVERY)) {
-					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, rRequestHandler);
-					rc.requestRecovery();
-				}
+//				if (opr.getNodeId() == nodeId && opr.getType().equals(OperationType.CHECKPOINT)) {
+//					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, cRequestHandler);
+//					rc.requestCheckpoint();
+//				}
+//				else if(opr.getNodeId() == nodeId && opr.getType().equals(OperationType.RECOVERY)) {
+//					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, rRequestHandler);
+//					rc.requestRecovery();
+//				}
+				RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, csHandler, quroumRequestHandler);
+				rc.requestCS();
+
 			}
 			
 		} catch (Exception e) {
