@@ -8,7 +8,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	private Client client;
 	private Boolean isRunning;
 
-	public RecoveryRequestHandler(Client client) {
+	public RecoveryRequestHandler(Client client, Config config, Integer src) {
 		// TODO Auto-generated constructor stub
 		this.client = client;
 	}
@@ -80,7 +80,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	}
 
 	@Override
-	public void requestRecovery(Integer src) {
+	public void requestRecovery() {
 		// TODO Auto-generated method stub
 
 	}

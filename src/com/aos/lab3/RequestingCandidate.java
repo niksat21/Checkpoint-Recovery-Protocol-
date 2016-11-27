@@ -56,10 +56,10 @@ public class RequestingCandidate {
 				Operation opr = it1.next();
 				if (nodeId.equals(opr.getNodeId())) {
 					if (opr.getType().equals(OperationType.CHECKPOINT)) {
-						checkpointHandler.requestCheckpoint(nodeId, counter);
+						checkpointHandler.requestCheckpoint(counter);
 						ctrlCount++;
 					} else if (opr.getType().equals(OperationType.RECOVERY)) {
-						recoveryHandler.requestRecovery(nodeId);
+						recoveryHandler.requestRecovery();
 						ctrlCount++;
 					} else {
 						logger.error("Unsupported operation type: {}", opr.toString());
