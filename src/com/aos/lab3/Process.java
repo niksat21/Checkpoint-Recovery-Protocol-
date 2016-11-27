@@ -1,14 +1,14 @@
 package com.aos.lab3;
 
 import java.net.InetAddress;
+import java.util.Iterator;
 import java.util.Random;
-
+import java.lang.reflect.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Process {
 
-	private static final int INITIAL_SLEEP_TIME = 6000;
 	private static Logger logger = LogManager.getLogger(Process.class);
 	private static Random rand = new Random();
 	private static int labelValue = rand.nextInt(9) + 1;
@@ -19,34 +19,69 @@ public class Process {
 			ConfigParser parser = new ConfigParser();
 			Config config = parser.getConfig();
 
+			String version = System.getProperty("version");
+
 			String hostname = InetAddress.getLocalHost().getHostName();
 			nodeId = Integer.valueOf(System.getProperty("nodeId"));
 			logger.info("Hostname:{} NodeId:{} Label value:{}", hostname, nodeId, labelValue);
 			Node node = config.getNodes().get(nodeId);
-
-			// starting servers
+			
+			//starting servers
 			Server server = new Server(nodeId, labelValue, node.getPort(), config);
 			Client client = new Client(hostname, labelValue, config, nodeId);
 			server.setClientHandler(client);
-
+			
 			Thread clientThread = new Thread(client, "client-thread");
 			Thread serverThread = new Thread(server, "server-thread");
 
 			clientThread.start();
 			serverThread.start();
-
-			// Wait for other nodes to come up
-			Thread.sleep(INITIAL_SLEEP_TIME);
-			logger.info("Sleeping for {}", INITIAL_SLEEP_TIME);
-
-			ICheckpointRequestHandler checkpointHandler = new CheckpointRequestHandler(client);
-			IRecoveryRequestHandler recoveryHandler = new RecoveryRequestHandler(client);
-			RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, checkpointHandler,
-					recoveryHandler);
-			rc.start();
+			
+			//we sleep little before starting operations
+			Thread.sleep(10000);
+			
+			//Iterating through the list of operations
+			
+			/*Iterator itr = config.operations.iterator();
+			Operation opr= null;
+			while(itr.hasNext()){
+				opr = (Operation) itr.next();
+				if (opr.getNodeId() == nodeId && opr.getType().equals(OperationType.CHECKPOINT)) {
+					ICheckpointRequestHandler icrh = new CheckpointRequestHandler(client);
+					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, icrh);
+					server.setCheckpointHandler(icrh);
+					rc.requestCheckpoint();
+				}
+				else if(opr.getNodeId() == nodeId && opr.getType().equals(OperationType.RECOVERY)) {
+					IRecoveryRequestHandler irh = new RecoveryRequestHandler(client);
+					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, irh);
+					server.setRecovereHandler(irh);
+					rc.requestRecovery();
+				}
+			}*/
+			
 		} catch (Exception e) {
 			logger.error("Exception in Process", e);
 		}
 
 	}
+
+	// private static void writeOutputToFile(String hostname) throws IOException
+	// {
+	// BufferedWriter writer = new BufferedWriter(new FileWriter(hostname + "_"
+	// + nodeId + ".txt"));
+	// writer.write("Label value: " + labelValue);
+	// writer.write("\nOutput value: " + ServerWorker.getResult());
+	// writer.close();
+	// }
+
+	private static Integer getNodeId(String hostname, Config config) {
+		for (Node node : config.getNodes()) {
+			if (node.getHostname().equals(hostname))
+				return node.getNodeId();
+		}
+		logger.error("Unable to find nodeId for hostname: {} in the list", hostname);
+		return null;
+	}
+
 }
