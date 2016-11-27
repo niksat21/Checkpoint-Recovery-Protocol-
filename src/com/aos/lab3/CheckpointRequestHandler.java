@@ -10,18 +10,19 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 	CheckpointRequestHandler(Client client) {
 		this.client = client;
+		
+		Set<Integer> myBuddies = config.getNodeIdVsNeighbors().get(nodeId);
 	}
 
 	@Override
-	public void spreadTheWord(Config config, Integer nodeId) {
+	public void spreadTheWord(Config config, Integer nodeId, MessageType msgType) {
 		// TODO Auto-generated method stub
-		Set<Integer> myBuddies = config.getNodeIdVsNeighbors().get(nodeId);
 		int dest;
 		Iterator<Integer> itr = myBuddies.iterator();
 
 		dest = itr.next();
 		while (itr.hasNext()) {
-			Message msg = new Message(nodeId, dest, client.llr[dest], MessageType.CHECKPOINT);
+			Message msg = new Message(nodeId, dest, client.llr[dest], msgType);
 			client.sendMsg(msg);
 		}
 	}
@@ -39,16 +40,11 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 				// dont save
 
 			}
-			sendCheckpointAck(src, dest);
+			spreadTheWord(src, dest, MessageType.ACKCHECKPOINT);
 		} else {
 			// already have taken a checkpoint
 
 		}
-	}
-
-	private void sendCheckpointAck(int src, int dest) {
-		// TODO Auto-generated method stub
-		client.sendMsg(new Message(dest, src, MessageType.ACKCHECKPOINT));
 	}
 
 	public boolean canITakeCheckpoint(int src, int dest, Integer llr, Integer[] fls) {

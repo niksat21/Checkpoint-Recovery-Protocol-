@@ -6,6 +6,7 @@ import java.util.Set;
 public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 	private Client client;
+	private Boolean isRunning;
 	
 	public RecoveryRequestHandler(Client client) {
 		// TODO Auto-generated constructor stub
@@ -70,6 +71,13 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	public void revert() {
 		// revert vectors to old state
 		
+	}
+
+	@Override
+	public boolean isRunning() {
+		synchronized (isRunning) {
+			return isRunning;
+		}
 	}
 
 	

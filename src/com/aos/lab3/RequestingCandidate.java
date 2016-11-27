@@ -15,21 +15,23 @@ public class RequestingCandidate {
 	private Client client;
 	private IRecoveryRequestHandler iRecovereHandler;
 	private ICheckpointRequestHandler iCheckpointHandler;
+	private Integer initiator;
 	
-	RequestingCandidate(Config config, Integer nodeId, Client client, ICheckpointRequestHandler iCheckpointHandler) {
+	RequestingCandidate(Config config, Integer nodeId, Client client, ICheckpointRequestHandler iCheckpointHandler, Integer initiator) {
 		this.config = config;
 		this.nodeId = nodeId;
 		this.client = client;
 		this.iCheckpointHandler = iCheckpointHandler;
-		this.initiator initiator;
+		this.initiator = initiator;
 	}
 
-	RequestingCandidate(Config config2, Integer nodeId2, Client client2, IRecoveryRequestHandler iRecovereHandler) {
+	RequestingCandidate(Config config2, Integer nodeId2, Client client2, IRecoveryRequestHandler iRecovereHandler, Integer initiator) {
 		// TODO Auto-generated constructor stub
 		this.config = config2;
 		this.nodeId = nodeId2;
 		this.client = client2;
 		this.iRecovereHandler = iRecovereHandler;
+		this.initiator = initiator;
 	}
 
 	public void requestCheckpoint() throws InterruptedException {
@@ -78,10 +80,10 @@ public class RequestingCandidate {
 		//lets send checkpoint request to all and setting myself as true		
 		
 		//setting this only if its initiator
-		if(nodeId == initiator)	
+		if(this.nodeId == this.initiator)	
 			client.tentativeCheckpoint = true;
 		
-		iCheckpointHandler.spreadTheWord(config, nodeId);
+		iCheckpointHandler.spreadTheWord(config, nodeId, MessageType.CHECKPOINT);
 		
 
 	}
