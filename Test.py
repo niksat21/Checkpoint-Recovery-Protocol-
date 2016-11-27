@@ -55,16 +55,22 @@ with open(sys.argv[1], 'r') as f:
 
             print nodeId, opId, currentOp
             if currentOp == "":
+                
                 currentOp = opId
-                print nodeId, opId, currentOp
+
                 nodes.append(nodeId)
                 OPVsNode.update({opId : nodes})
                 fetchGlobalState()
 
+            elif currentOp == opId:
+                
+                nodes.append(nodeId)
+                OPVsNode.update({opId : nodes})
+                fetchGlobalState()
             else:
-                currentOp = opId
-                print currentOp
-                currentOp = ""
+                
+                currentOp=""
+                nodes=[]
                 nodes.append(nodeId)
                 OPVsNode.update({opId : nodes})
                 fetchGlobalState()
