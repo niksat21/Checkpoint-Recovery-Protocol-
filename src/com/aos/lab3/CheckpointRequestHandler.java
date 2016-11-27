@@ -7,11 +7,12 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 	private Client client;
 	private Boolean isRunning;
+	private Config config;
 
-	CheckpointRequestHandler(Client client) {
+	CheckpointRequestHandler(Client client, Config config, Integer src) {
 		this.client = client;
-
-		Set<Integer> myBuddies = config.getNodeIdVsNeighbors().get(nodeId);
+		this.config = config;
+		Set<Integer> myBuddies = config.getNodeIdVsNeighbors().get(src);
 	}
 
 	@Override
@@ -70,9 +71,8 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	}
 
 	@Override
-	public void requestCheckpoint(Integer source, Integer counter) {
+	public void requestCheckpoint(Integer counter) {
 		// TODO Auto-generated method stub
 
 	}
-
 }
