@@ -13,7 +13,7 @@ public class Message implements Serializable{
 	private MessageType msgType;
 	private Long requestTS;
 
-	public Message(Integer source, Integer destination, List<Integer> path, Integer value, MessageType msgType) {
+	public Message(Integer source, Integer destination, Integer value, MessageType msgType) {
 		this.source = source;
 		this.destination = destination;
 		this.path = path;

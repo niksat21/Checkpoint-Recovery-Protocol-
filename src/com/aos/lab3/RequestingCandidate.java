@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Iterator;
+import java.util.Set;
 
 public class RequestingCandidate {
 
@@ -15,35 +16,27 @@ public class RequestingCandidate {
 	private IRecoveryRequestHandler iRecovereHandler;
 	private ICheckpointRequestHandler iCheckpointHandler;
 	
-	public RequestingCandidate(Config config, Integer nodeId, Client client, ICheckpointRequestHandler iCheckpointHandler) {
+	RequestingCandidate(Config config, Integer nodeId, Client client, ICheckpointRequestHandler iCheckpointHandler) {
 		this.config = config;
 		this.nodeId = nodeId;
 		this.client = client;
 		this.iCheckpointHandler = iCheckpointHandler;
 	}
 
-	public RequestingCandidate(Config config2, Integer nodeId2, Client client2, IRecoveryRequestHandler iRecovereHandler) {
+	RequestingCandidate(Config config2, Integer nodeId2, Client client2, IRecoveryRequestHandler iRecovereHandler) {
 		// TODO Auto-generated constructor stub
-		this.config = config;
-		this.nodeId = nodeId;
-		this.client = client;
+		this.config = config2;
+		this.nodeId = nodeId2;
+		this.client = client2;
 		this.iRecovereHandler = iRecovereHandler;
 	}
 
 	public void requestCheckpoint() throws InterruptedException {
-//
-//		while(true){
-//			Thread.sleep(500);
-//			//checking if all the queues are empty
-//			if(quroumRequestHandler.checkRequestingQueue() && csHandler.checkSets() ){
-//				//start broadcasting complete message
-//				ServerWorker.isCompleted = Boolean.TRUE;
-//				client.broadcastCompletionMsg();
-//				break;
-//			}
-//		}
 
-		int appCount=0,ctrlCount=0;
+		
+
+		//commenting Nikhil's code for now
+		/*int appCount=0,ctrlCount=0;
 		long timeToSend=0;
 
 
@@ -52,7 +45,7 @@ public class RequestingCandidate {
 			if(!isOpearationRunning){									//if no operation is currently running in system then only send app msgs
 				while(timeToSend<=(timeToSend+getExpoRandom(config.getMinInstanceDelay()))){
 					appCount++;
-					Thread.sleep(config.getMinSendDelay());				//sleep before seding application msg
+					Thread.sleep(config.getMinSendDelay());				//sleep before sending application msg
 
 					//send application message
 
@@ -79,17 +72,32 @@ public class RequestingCandidate {
 		}
 		while(ctrlCount<=config.getNoOfOperations()){
 			//perform operations with some instance delay
-		}
+		}*/
+		
+		//lets send checkpoint request to all and setting myself as true		
+		client.tentativeCheckpoint = true;
+		iCheckpointHandler.spreadTheWord(config, nodeId);
+		
 
 	}
+	
+	public void requestRecovery(){
+		
+		//reverting to old state
+		iRecovereHandler.revert();
+		iRecovereHandler.askOthersForRollback(config, nodeId);
+		
+	}
 
-	private static int getExpoRandom(int mean) {
+//Commenting Nikhil's code for now
+/*	private static int getExpoRandom(int mean) {
 
 		double temp = Math.random();
 		double exp = -(Math.log(temp) * mean);
 
 		return (int) exp;
 
-	}
+	}*/
+	
 
 }

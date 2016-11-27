@@ -23,13 +23,23 @@ public class Client implements Runnable {
 	private int labelValue;
 	private Config config;
 	private Integer nodeId;
-
+	static Integer[] llr;
+	static Integer[] fls;
+	static Integer[] lls;
+	private int noOfNodes;
+	boolean tentativeCheckpoint;
+	boolean recover;
+	
 	public Client(String nodeHostname, int labelValue, Config config, Integer nodeId) {
 		this.nodeHostname = nodeHostname;
 		this.labelValue = labelValue;
 		this.config = config;
 		this.nodeId = nodeId;
-
+		this.noOfNodes = config.getNoOfNodes();
+		llr = new Integer[noOfNodes];
+		fls = new Integer[noOfNodes];
+		lls = new Integer[noOfNodes];
+		initVectors();
 	}
 
 	// Open connections with every other node
@@ -114,10 +124,18 @@ public class Client implements Runnable {
 			// Ignore sending the completion message to itself
 			if (node.getNodeId().equals(nodeId))
 				continue;
-			Message msg = new Message(nodeId, node.getNodeId(), null, 0, MessageType.COMPLETED);
+			Message msg = new Message(nodeId, node.getNodeId(), MessageType.COMPLETED);
 			sendMsg(msg);
 		}
 
+	}
+	
+	public void initVectors(){
+		for(int i=0; i<this.noOfNodes; i++){
+			this.llr[i] = Integer.MIN_VALUE;
+			this.fls[i] = Integer.MIN_VALUE;
+			this.lls[i] = Integer.MIN_VALUE;
+		}
 	}
 
 }

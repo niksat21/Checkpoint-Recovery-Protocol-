@@ -21,18 +21,15 @@ public class Server implements Runnable {
 	private Integer nodeId;
 	private Integer labelValue;
 	private Config config;
-	private ICheckpointRequestHandler iCheckpointHandler;
-	private IRecoveryRequestHandler iRecoveryHandler;
 	private SctpChannel sc;
+	private IRecoveryRequestHandler iRecovereHandler;
+	private ICheckpointRequestHandler iCheckpointHandler;
 
-	public Server(Integer nodeId, Integer labelValue, Integer port, Config config,
-			ICheckpointRequestHandler iCheckpointHandler, IRecoveryRequestHandler iRecoveryHandler) {
+	public Server(Integer nodeId, Integer labelValue, Integer port, Config config) {
 		this.nodeId = nodeId;
 		this.labelValue = labelValue;
 		this.port = port;
 		this.config = config;
-		this.iCheckpointHandler = iCheckpointHandler;
-		this.iRecoveryHandler = iRecoveryHandler;
 	}
 
 	@Override
@@ -46,10 +43,16 @@ public class Server implements Runnable {
 
 	public void setClientHandler(Client client) {
 		this.client = client;
-		quorumRequestHandler.setClientHandler(client);
-		csHandler.setClientHandler(client);
 	}
 
+	public void setRecovereHandler(IRecoveryRequestHandler iRecovereHandler) {
+		this.iRecovereHandler = iRecovereHandler;
+	}
+	
+	public void setCheckpointHandler(ICheckpointRequestHandler iCheckpointHandler) {
+		this.iCheckpointHandler = iCheckpointHandler;
+	}
+	
 	private void listenForConnections() throws Exception {
 		SctpServerChannel ssc = SctpServerChannel.open();
 		InetSocketAddress serverAddr = new InetSocketAddress(port);
@@ -60,7 +63,7 @@ public class Server implements Runnable {
 				
 				sc = ssc.accept();
 				ServerWorker worker = new ServerWorker(nodeId, sc, client, labelValue, config, assocHandler,
-						quorumRequestHandler, csHandler, ssc);
+						ssc, iCheckpointHandler, iRecovereHandler);
 				logger.debug("Created server worker");
 				Thread workerThread = new Thread(worker);
 				logger.debug("Created server worker thread");

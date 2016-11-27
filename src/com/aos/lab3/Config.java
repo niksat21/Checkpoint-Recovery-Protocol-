@@ -15,7 +15,7 @@ public class Config {
 
 	private List<Node> nodes = new LinkedList<Node>();
 	private Map<Integer, Set<Integer>> nodeIdVsNeighbors;
-	private List<Operation> operations;
+	public List<Operation> operations;
 
 
 	public Config(Integer noOfNodes, Integer noOfOperations, Integer minInstanceDelay, Integer minSendDelay,

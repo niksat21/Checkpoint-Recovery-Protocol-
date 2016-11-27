@@ -29,22 +29,22 @@ public class ServerWorker implements Runnable {
 	private Integer labelValue;
 	private Config config;
 	private AssociationHandler assocHandler;
-	private IQuorumRequestHandler quorumRequestHandler;
-	private ICriticalSectionHandler csHandler;
 	private SctpServerChannel ssc;
+	private ICheckpointRequestHandler iCheckpointHandler;
+	private IRecoveryRequestHandler iRecoveryHandler;
 
 	public ServerWorker(Integer nodeId, SctpChannel sc, Client client, Integer labelValue, Config config,
-			AssociationHandler assocHandler, IQuorumRequestHandler quorumRequestHandler,
-			ICriticalSectionHandler csHandler, SctpServerChannel ssc) {
+			AssociationHandler assocHandler, SctpServerChannel ssc, ICheckpointRequestHandler iCheckpointHandler, 
+			IRecoveryRequestHandler iRecoveryHandler) {
 		this.sc = sc;
 		this.nodeId = nodeId;
 		this.client = client;
 		this.labelValue = labelValue;
 		this.config = config;
 		this.assocHandler = assocHandler;
-		this.quorumRequestHandler = quorumRequestHandler;
-		this.csHandler = csHandler;
 		this.ssc = ssc;
+		this.iCheckpointHandler = iCheckpointHandler;
+		this.iRecoveryHandler = iRecoveryHandler;
 		noOfNodes = config.getNoOfNodes();
 	}
 
@@ -54,7 +54,7 @@ public class ServerWorker implements Runnable {
 			// Sleep for sometime so that the other nodes come up.
 			Thread.sleep(8000);
 
-			while (true /* && !isCompleted */) {
+			while (true) {
 				ByteBuffer buf = ByteBuffer.allocateDirect(500000);
 				MessageInfo messageInfo = sc.receive(buf, System.out, assocHandler);
 				buf.flip();
@@ -69,21 +69,15 @@ public class ServerWorker implements Runnable {
 				ois.close();
 				bis.close();
 
-				if (msg.getMsgType().equals(MessageType.REQUEST)) {
-					quorumRequestHandler.handleRequestMessage(new CSRequest(msg.getSource(), msg.getRequestTS()));
-				} else if (msg.getMsgType().equals(MessageType.RELEASE)) {
-					quorumRequestHandler.handleReleaseMessage(msg.getSource());
-				} else if (msg.getMsgType().equals(MessageType.YIELD)) {
-					quorumRequestHandler.handleYieldMessage(msg.getSource());
-				} else if (msg.getMsgType().equals(MessageType.GRANT)) {
-					csHandler.handleGrantMessage(msg.getSource());
-				} else if (msg.getMsgType().equals(MessageType.FAILED)) {
-					csHandler.handleFailedMessage(msg.getSource());
-				} else if (msg.getMsgType().equals(MessageType.INQUIRE)) {
-					csHandler.handleInquireMessage(msg.getSource());
+				if (msg.getMsgType().equals(MessageType.CHECKPOINT)) {
+					iCheckpointHandler.handleCheckpointMessage(msg.getSource(), msg.getDestination(), msg.getValue(), client.fls);
+				} else if (msg.getMsgType().equals(MessageType.RECOVERY)) {
+					iRecoveryHandler.handleRecoveryMessage(msg.getSource(), msg.getDestination(), msg.getValue(), client.llr);
 				} else if (msg.getMsgType().equals(MessageType.COMPLETED)) {
 					handleCompleteMessage(msg.getSource());
 					logger.error("Received COMPLETED at:{} from:{} ", msg.getSource(), msg.getDestination());
+				} else if (msg.getMsgType().equals(MessageType.ACKCHECKPOINT)) {
+					iCheckpointHandler.handleAckChpMessage(msg.getSource(), msg.getDestination());
 				} else {
 					logger.error("Unsupported message type : {} by the quorum handler", msg.getMsgType().toString());
 				}

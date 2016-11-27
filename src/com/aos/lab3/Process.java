@@ -27,37 +27,37 @@ public class Process {
 			Node node = config.getNodes().get(nodeId);
 			
 			//starting servers
-			Server server = new Server(nodeId, labelValue, node.getPort(), config, quroumRequestHandler, csHandler);
+			Server server = new Server(nodeId, labelValue, node.getPort(), config);
 			Client client = new Client(hostname, labelValue, config, nodeId);
 			server.setClientHandler(client);
-
+			
 			Thread clientThread = new Thread(client, "client-thread");
 			Thread serverThread = new Thread(server, "server-thread");
 
 			clientThread.start();
 			serverThread.start();
-
+			
+			//we sleep little before starting operations
 			Thread.sleep(10000);
 			
 			//Iterating through the list of operations
-			ICheckpointRequestHandler cRequestHandler = null;
-			IRecoveryRequestHandler rRequestHandler = null;
 			
 			Iterator itr = config.operations.iterator();
 			Operation opr= null;
 			while(itr.hasNext()){
 				opr = (Operation) itr.next();
-//				if (opr.getNodeId() == nodeId && opr.getType().equals(OperationType.CHECKPOINT)) {
-//					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, cRequestHandler);
-//					rc.requestCheckpoint();
-//				}
-//				else if(opr.getNodeId() == nodeId && opr.getType().equals(OperationType.RECOVERY)) {
-//					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, rRequestHandler);
-//					rc.requestRecovery();
-//				}
-				RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, csHandler, quroumRequestHandler);
-				rc.requestCS();
-
+				if (opr.getNodeId() == nodeId && opr.getType().equals(OperationType.CHECKPOINT)) {
+					ICheckpointRequestHandler icrh = new CheckpointRequestHandler(client);
+					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, icrh);
+					server.setCheckpointHandler(icrh);
+					rc.requestCheckpoint();
+				}
+				else if(opr.getNodeId() == nodeId && opr.getType().equals(OperationType.RECOVERY)) {
+					IRecoveryRequestHandler irh = new RecoveryRequestHandler(client);
+					RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, irh);
+					server.setRecovereHandler(irh);
+					rc.requestRecovery();
+				}
 			}
 			
 		} catch (Exception e) {

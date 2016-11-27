@@ -2,14 +2,10 @@ package com.aos.lab3;
 
 public interface ICheckpointRequestHandler {
 
-	public void handleYieldMessage(Integer sourceNodeId);
+	void spreadTheWord(Config config, Integer nodeId);
 
-	public void handleReleaseMessage(Integer sourceNodeId);
+	void handleCheckpointMessage(int src, int dest, Integer llr, Integer[] fls);
 
-	public void handleRequestMessage(CSRequest request);
-
-	public void setClientHandler(Client client);
-
-	public boolean checkRequestingQueue();
-
+	void handleAckChpMessage(Integer source, Integer destination);
+	
 }
