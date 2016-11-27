@@ -8,11 +8,12 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	private Client client;
 	private Boolean isRunning;
 	private Config config;
-
+	private Set<Integer> myBuddies;
+	
 	CheckpointRequestHandler(Client client, Config config, Integer src) {
 		this.client = client;
 		this.config = config;
-		Set<Integer> myBuddies = config.getNodeIdVsNeighbors().get(src);
+		myBuddies = config.getNodeIdVsNeighbors().get(src);
 	}
 
 	@Override
@@ -41,11 +42,16 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 				// dont save
 
 			}
-			spreadTheWord(src, dest, MessageType.ACKCHECKPOINT);
+			sendAck(src, dest, MessageType.ACKCHECKPOINT);
 		} else {
 			// already have taken a checkpoint
 
 		}
+	}
+
+	private void sendAck(int src, int dest, MessageType msgType) {
+		// TODO Auto-generated method stub
+		this.client.sendMsg(new Message(src, dest, msgType));
 	}
 
 	public boolean canITakeCheckpoint(int src, int dest, Integer llr, Integer[] fls) {
@@ -71,7 +77,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	}
 
 	@Override
-	public void requestCheckpoint(Integer counter) {
+	public void requestCheckpoint(Integer nodeId, Integer counter) {
 		// TODO Auto-generated method stub
 
 	}
