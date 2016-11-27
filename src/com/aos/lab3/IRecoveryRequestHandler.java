@@ -8,4 +8,6 @@ public interface IRecoveryRequestHandler {
 
 	public void revert();
 
+	boolean isRunning();
+
 }

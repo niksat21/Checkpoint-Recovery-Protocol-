@@ -6,7 +6,8 @@ import java.util.Set;
 public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 	private Client client;
-	
+	private Boolean isRunning;
+
 	public RecoveryRequestHandler(Client client) {
 		// TODO Auto-generated constructor stub
 		this.client = client;
@@ -15,21 +16,20 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	@Override
 	public void handleRecoveryMessage(int src, int dest, Integer lls, Integer[] llr) {
 		// TODO Auto-generated method stub
-		if(!client.recover){
+		if (!client.recover) {
 			client.recover = shouldIRollback(src, dest, lls, llr);
-			
-			if(client.recover){
-				//revert to old state
-				
-			}
-			else {
-				//no change in state
-				
+
+			if (client.recover) {
+				// revert to old state
+
+			} else {
+				// no change in state
+
 			}
 			sendAckRecovery(src, dest);
-		} else{
-			//already have recovered
-			
+		} else {
+			// already have recovered
+
 		}
 	}
 
@@ -40,7 +40,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 	private boolean shouldIRollback(int src, int dest, Integer lls, Integer[] llr) {
 		// TODO Auto-generated method stub
-		if(llr[src] > lls)
+		if (llr[src] > lls)
 			return true;
 		else
 			return false;
@@ -50,26 +50,32 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	public void askOthersForRollback(Config config, Integer nodeId) {
 		// TODO Auto-generated method stub
 
-		//resetting llr vector on crash
-		for(int i=0; i<client.llr.length; i++)
+		// resetting llr vector on crash
+		for (int i = 0; i < client.llr.length; i++)
 			client.llr[i] = Integer.MIN_VALUE;
-		
+
 		Set<Integer> myBuddies = config.getNodeIdVsNeighbors().get(nodeId);
 		int dest;
 		Iterator<Integer> itr = myBuddies.iterator();
-		
+
 		dest = itr.next();
-		while(itr.hasNext()){
+		while (itr.hasNext()) {
 			Message msg = new Message(nodeId, dest, client.lls[dest], MessageType.RECOVERY);
-			client.sendMsg(msg); 
+			client.sendMsg(msg);
 		}
 	}
 
 	@Override
 	public void revert() {
 		// revert vectors to old state
-		
+
 	}
 
-	
+	@Override
+	public boolean isRunning() {
+		synchronized (isRunning) {
+			return isRunning;
+		}
+	}
+
 }

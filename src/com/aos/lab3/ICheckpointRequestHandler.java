@@ -7,5 +7,7 @@ public interface ICheckpointRequestHandler {
 	void handleCheckpointMessage(int src, int dest, Integer llr, Integer[] fls);
 
 	void handleAckChpMessage(Integer source, Integer destination);
-	
+
+	boolean isRunning();
+
 }

@@ -1,14 +1,14 @@
 package com.aos.lab3;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
-public class CheckpointRequestHandler implements ICheckpointRequestHandler{
+public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 	private Client client;
-	
-	CheckpointRequestHandler(Client client){
+	private Boolean isRunning;
+
+	CheckpointRequestHandler(Client client) {
 		this.client = client;
 	}
 
@@ -18,53 +18,59 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler{
 		Set<Integer> myBuddies = config.getNodeIdVsNeighbors().get(nodeId);
 		int dest;
 		Iterator<Integer> itr = myBuddies.iterator();
-		
+
 		dest = itr.next();
-		while(itr.hasNext()){
+		while (itr.hasNext()) {
 			Message msg = new Message(nodeId, dest, client.llr[dest], MessageType.CHECKPOINT);
-			client.sendMsg(msg); 
+			client.sendMsg(msg);
 		}
 	}
 
 	@Override
 	public void handleCheckpointMessage(int src, int dest, Integer llr, Integer[] fls) {
 		// TODO Auto-generated method stub
-		if(!client.tentativeCheckpoint) {
+		if (!client.tentativeCheckpoint) {
 			client.tentativeCheckpoint = canITakeCheckpoint(src, dest, llr, fls);
-			
-			if(client.tentativeCheckpoint){
-				//save state
+
+			if (client.tentativeCheckpoint) {
+				// save state
 				client.initVectors();
-			} else{
-				//dont save
-				
+			} else {
+				// dont save
+
 			}
-		sendCheckpointAck(src, dest);
+			sendCheckpointAck(src, dest);
 		} else {
-			//already have taken a checkpoint
-			
+			// already have taken a checkpoint
+
 		}
 	}
-	
+
 	private void sendCheckpointAck(int src, int dest) {
 		// TODO Auto-generated method stub
 		client.sendMsg(new Message(dest, src, MessageType.ACKCHECKPOINT));
 	}
 
-	public boolean canITakeCheckpoint(int src, int dest, Integer llr, Integer[] fls){
-		
-		//checkpoint condition
-		if((llr >= fls[dest]) && (fls[dest] > Integer.MIN_VALUE))
+	public boolean canITakeCheckpoint(int src, int dest, Integer llr, Integer[] fls) {
+
+		// checkpoint condition
+		if ((llr >= fls[dest]) && (fls[dest] > Integer.MIN_VALUE))
 			return true;
-		else 
+		else
 			return false;
 	}
 
 	@Override
 	public void handleAckChpMessage(Integer source, Integer destination) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
-	
+	@Override
+	public boolean isRunning() {
+		synchronized (isRunning) {
+			return isRunning;
+		}
+	}
+
 }
