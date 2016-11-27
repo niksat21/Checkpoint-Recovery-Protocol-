@@ -26,9 +26,7 @@ public class RequestingCandidate {
 		this.recoveryHandler = recoveryHandler;
 	}
 
-	public void start() {
-
-		 int appCount=1,ctrlCount=1;
+	public void start() {		 int appCount=1,ctrlCount=1;
 		 long timeToSend=0;
 		
 		
@@ -74,37 +72,12 @@ public class RequestingCandidate {
 		 	}
 		 	it.next();
 		 }
-		
-		 }
-		 while(appCount<=config.getNoOfMsgs()){
-		 //just send application msgs
-		 }
-		 while(ctrlCount<=config.getNoOfOperations()){
-		 //perform operations with some instance delay
-		 }
-		
-		 //lets send checkpoint request to all and setting myself as true
-		 client.tentativeCheckpoint = true;
-		 iCheckpointHandler.spreadTheWord(config, nodeId);
-		
-
-		
-	}
-
-	public void requestCheckpoint() throws InterruptedException {
-
-	}
-
-	public void requestRecovery() {
-		// reverting to old state
-		recoveryHandler.revert();
-		recoveryHandler.askOthersForRollback(config, nodeId);
-
-	}
 
 	private static int getExpoRandom(int mean) {
+
 		double temp = Math.random();
 		double exp = -(Math.log(temp) * mean);
+
 		return (int) exp;
 	}
 }

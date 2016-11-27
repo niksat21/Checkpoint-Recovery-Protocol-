@@ -29,6 +29,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 			sendAckRecovery(src, dest);
 		} else {
 			// already have recovered
+			// discard this
 
 		}
 	}
