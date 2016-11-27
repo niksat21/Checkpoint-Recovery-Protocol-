@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -131,10 +132,35 @@ public class ConfigParser {
 		try {
 			ConfigParser parser = new ConfigParser();
 			Config config2 = parser.getConfig();
+
+			printSampleMsg();
+
 			System.out.println("Done");
 		} catch (IOException e) {
 			logger.error(e);
 		}
+	}
+
+	private static void printSampleMsg() {
+		Integer[] fls = new Integer[5];
+		Integer[] llr = new Integer[5];
+		Integer[] lls = new Integer[5];
+		Set<Integer> neighbors = new HashSet<Integer>();
+		neighbors.add(5);
+		neighbors.add(1);
+		neighbors.add(2);
+		neighbors.add(4);
+		neighbors.add(8);
+
+		String reqId = "R-1";
+		Integer nodeId = new Integer(3);
+		for (int k = 0, i = 3, j = 7; k < 5; i++, j++, k++) {
+			fls[k] = i;
+			llr[k] = j;
+			lls[k] = j * i;
+		}
+		logger.error("Operation completed in NodeId:{} OperationId:{} FLS:{} LLR:{} LLS:{} Neighbors:{}", nodeId, reqId,
+				fls, llr, lls, neighbors);
 	}
 
 }
