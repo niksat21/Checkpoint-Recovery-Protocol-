@@ -12,15 +12,23 @@ public class Message implements Serializable{
 	private Integer value;
 	private MessageType msgType;
 	private Long requestTS;
+	private Integer initiator;
 
-	public Message(Integer source, Integer destination, Integer value, MessageType msgType) {
+	public Message(Integer initiator, Integer source, Integer destination, Integer value, MessageType msgType) {
 		this.source = source;
 		this.destination = destination;
-		this.path = path;
 		this.value = value;
 		this.msgType = msgType;
+		this.initiator = initiator;
 	}
 
+	public Message(Integer initiator, Integer source, Integer destination, MessageType msgType) {
+		this.source = source;
+		this.destination = destination;
+		this.msgType = msgType;
+		this.initiator = initiator;
+	}
+	
 	public Message(Integer source, Integer destination, MessageType msgType) {
 		super();
 		this.source = source;

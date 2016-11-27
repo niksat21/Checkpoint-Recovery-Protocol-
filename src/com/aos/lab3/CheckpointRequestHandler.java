@@ -9,11 +9,13 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	private Boolean isRunning;
 	private Config config;
 	private Set<Integer> myBuddies;
+	private Integer initiator;
 	
 	CheckpointRequestHandler(Client client, Config config, Integer src) {
 		this.client = client;
 		this.config = config;
 		myBuddies = config.getNodeIdVsNeighbors().get(src);
+		initiator = src;
 	}
 
 	@Override
@@ -24,7 +26,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 		dest = itr.next();
 		while (itr.hasNext()) {
-			Message msg = new Message(nodeId, dest, client.llr[dest], msgType);
+			Message msg = new Message(initiator, nodeId, dest, client.llr[dest], msgType);
 			client.sendMsg(msg);
 		}
 	}
@@ -42,7 +44,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 				// dont save
 
 			}
-			sendAck(src, dest, MessageType.ACKCHECKPOINT);
+			sendAck(dest, src, MessageType.ACKCHECKPOINT);
 		} else {
 			// already have taken a checkpoint
 
@@ -51,7 +53,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 	private void sendAck(int src, int dest, MessageType msgType) {
 		// TODO Auto-generated method stub
-		this.client.sendMsg(new Message(src, dest, msgType));
+		this.client.sendMsg(new Message(initiator, src, dest, msgType));
 	}
 
 	public boolean canITakeCheckpoint(int src, int dest, Integer llr, Integer[] fls) {
@@ -66,7 +68,14 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	@Override
 	public void handleAckChpMessage(Integer source, Integer destination) {
 		// TODO Auto-generated method stub
+		if(checkMyCohortsAcks()){
+			
+		}
+	}
 
+	private boolean checkMyCohortsAcks() {
+		
+		return false;
 	}
 
 	@Override
@@ -77,7 +86,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	}
 
 	@Override
-	public void requestCheckpoint(Integer nodeId, Integer counter) {
+	public void requestCheckpoint(Integer counter) {
 		// TODO Auto-generated method stub
 
 	}
