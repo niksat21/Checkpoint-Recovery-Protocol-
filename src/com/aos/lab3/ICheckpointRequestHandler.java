@@ -8,7 +8,7 @@ public interface ICheckpointRequestHandler {
 
 	void handleAckChpMessage(Integer source, Integer destination);
 
-	void requestCheckpoint(Integer source);
+	void requestCheckpoint(Integer source, Integer counter);
 
 	boolean isRunning();
 

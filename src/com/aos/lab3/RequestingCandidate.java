@@ -59,7 +59,7 @@ public class RequestingCandidate {
 			 Operation opr = it1.next();
 			 if(nodeId.equals(opr.getNodeId())){
 				 if(opr.getType().equals(OperationType.CHECKPOINT)) {
-					 checkpointHandler.handleCheckpointMessage(src, dest, llr, fls);
+					 checkpointHandler.requestCheckpoint(nodeId, counter);
 				 }
 				 
 			 }
