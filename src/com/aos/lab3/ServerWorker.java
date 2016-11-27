@@ -78,6 +78,8 @@ public class ServerWorker implements Runnable {
 					logger.error("Received COMPLETED at:{} from:{} ", msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.ACKCHECKPOINT)) {
 					iCheckpointHandler.handleAckChpMessage(msg.getSource(), msg.getDestination());
+				} else if (msg.getMsgType().equals(MessageType.ACKRECOVERY)) {
+					iCheckpointHandler.handleAckChpMessage(msg.getSource(), msg.getDestination());
 				} else {
 					logger.error("Unsupported message type : {} by the quorum handler", msg.getMsgType().toString());
 				}

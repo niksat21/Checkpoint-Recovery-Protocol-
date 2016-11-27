@@ -138,4 +138,9 @@ public class Client implements Runnable {
 		}
 	}
 
+	public Integer getNodeId() {
+		return nodeId;
+	}
+	
+
 }
