@@ -1,5 +1,8 @@
 package com.aos.lab3;
 
+import java.util.Iterator;
+import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,36 +35,44 @@ public class RequestingCandidate {
 		 while(ctrlCount<=config.getNoOfOperations() &&
 		 appCount<=config.getNoOfMsgs()){
 		 timeToSend = System.currentTimeMillis();
+		 
+		 //TODO: set the flag in server worker to notify operation is not running in system
 		 if(!checkpointHandler.isRunning() && !recoveryHandler.isRunning()){ 
 			 //if no operation is currently running in
 		 //system then only send app msgs
-		 while(timeToSend<=(timeToSend+getExpoRandom(config.getMinInstanceDelay()))){
-		 appCount++;
-		 Thread.sleep(config.getMinSendDelay()); //sleep before sending
-		 Set<Integer> cohorts = config.getNodeIdVsNeighbors().get(nodeId)
-		 for(int i=0;i<.size();i++){
-			 Message msg = new Message(nodeId, , msgType)
-			 client.sendMsg(msg);
-		 }
-		 application msg
+				 
+				 
+				 Set<Integer> cohorts = config.getNodeIdVsNeighbors().get(nodeId);
+				 Iterator<Integer> it = cohorts.iterator();
+				 for(int i=0;i<cohorts.size() && timeToSend<=(timeToSend+getExpoRandom(config.getMinInstanceDelay()));i++){
+					 Thread.sleep(config.getMinSendDelay()); //sleep before sending
+					 Message msg = new Message(nodeId,it.next(),MessageType.APPLICATION);
+					 client.sendMsg(msg);
+					 counter++;
+					 appCount++;
+					 timeToSend=System.currentTimeMillis();
+				 }
+		 	
+		 
 		
-		 //send application message
+				 
 		
-		 timeToSend=System.currentTimeMillis();
-		 }
-		 }
-		 Iterator<Operation> it = config.getOperationsList().iterator();
-		 if(nodeId==it.node){
-		 //send checkpoint / rec req and carry out whole check/recov procedure
-		
-		 }
-		 else{
+			 Iterator<Operation> it1 = config.getOperationsList().iterator();
+			 Operation opr = it1.next();
+			 if(nodeId.equals(opr.getNodeId())){
+				 if(opr.getType().equals(OperationType.CHECKPOINT)) {
+					 checkpointHandler.handleCheckpointMessage(src, dest, llr, fls);
+				 }
+				 
+			 }
+		 
+		 }else{
 		 while (true){
 		 Thread.sleep(10);
-		 if(//get opComplete msg from initiator)
-		 break;
-		 }
-		 it.next();
+		 	if(//get opComplete msg from initiator)
+		 			break;
+		 	}
+		 	it.next();
 		 }
 		
 		 }

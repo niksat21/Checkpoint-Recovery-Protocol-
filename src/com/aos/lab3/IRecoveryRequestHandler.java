@@ -8,6 +8,8 @@ public interface IRecoveryRequestHandler {
 
 	public void revert();
 
+	public void requestRecovery(Integer src);
+
 	boolean isRunning();
 
 }

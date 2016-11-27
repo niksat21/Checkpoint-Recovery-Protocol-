@@ -78,4 +78,10 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		}
 	}
 
+	@Override
+	public void requestRecovery(Integer src) {
+		// TODO Auto-generated method stub
+
+	}
+
 }

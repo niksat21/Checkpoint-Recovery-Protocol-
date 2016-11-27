@@ -73,4 +73,10 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 		}
 	}
 
+	@Override
+	public void requestCheckpoint(Integer source) {
+		// TODO Auto-generated method stub
+
+	}
+
 }
