@@ -18,8 +18,8 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	CheckpointRequestHandler(Client client, Config config, Integer src, IApplicationStateHandler appStateHandler) {
 		this.client = client;
 		this.config = config;
-		cohorts = config.getNodeIdVsNeighbors().get(src);
-		initiator = src;
+		this.cohorts = config.getNodeIdVsNeighbors().get(src);
+		this.initiator = src;
 		this.appStateHandler = appStateHandler;
 	}
 
@@ -47,8 +47,8 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 			client.tentativeCheckpoint = canITakeCheckpoint(src, dest, llr, fls);
 			if (client.tentativeCheckpoint)
 				takeCheckpoint(src, operationId);
-			sendAck(dest, src, MessageType.ACKCHECKPOINT);
 		}
+		sendAck(dest, src, MessageType.ACKCHECKPOINT);
 	}
 
 	private void takeCheckpoint(Integer src, String operationId) throws InterruptedException {
@@ -82,7 +82,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 	public boolean canITakeCheckpoint(int src, int dest, Integer llr, Integer[] fls) {
 		// checkpoint condition
-		if ((llr >= fls[dest]) && (fls[dest] > Integer.MIN_VALUE))
+		if ((llr >= fls[src]) && (fls[src] > Integer.MIN_VALUE))
 			return true;
 		else
 			return false;

@@ -74,16 +74,18 @@ public class ServerWorker implements Runnable {
 							client.getFls(), msg.getOperationId());
 				} else if (msg.getMsgType().equals(MessageType.RECOVERY)) {
 					iRecoveryHandler.handleRecoveryMessage(msg.getSource(), msg.getDestination(), msg.getValue(),
-							client.getLlr());
+							client.getLlr(), msg.getOperationId());
 				} else if (msg.getMsgType().equals(MessageType.COMPLETED)) {
 					handleCompleteMessage(msg.getSource());
 					logger.error("Received COMPLETED at:{} from:{} ", msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.ACKCHECKPOINT)) {
 					iCheckpointHandler.handleAckChpMessage(msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.ACKRECOVERY)) {
-
-					// FIXME: Add a handler method
-				} else {
+					iRecoveryHandler.handleAckRcvMessage(msg.getSource(), msg.getDestination());	
+				} else if (msg.getMsgType().equals(MessageType.APPLICATION)) {
+					client.getLlr()[msg.getSource()] = msg.getValue();
+				}
+					else {
 					logger.error("Unsupported message type : {} by the quorum handler", msg.getMsgType().toString());
 				}
 			}

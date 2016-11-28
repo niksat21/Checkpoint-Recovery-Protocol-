@@ -33,8 +33,6 @@ public class RequestingCandidate {
 		while (ctrlCount <= config.getNoOfOperations() && appCount <= config.getNoOfMsgs()) {
 			timeToSend = System.currentTimeMillis();
 
-			// TODO: set the flag in server worker to notify operation is not
-			// running in system
 			if (!checkpointHandler.isRunning() && !recoveryHandler.isRunning()) {
 				// if no operation is currently running in
 				// system then only send app msgs
@@ -59,7 +57,7 @@ public class RequestingCandidate {
 						checkpointHandler.requestCheckpoint(counter, "C-" + ctrlCount);
 						ctrlCount++;
 					} else if (opr.getType().equals(OperationType.RECOVERY)) {
-						recoveryHandler.requestRecovery("R" + ctrlCount);
+						recoveryHandler.requestRecovery("R-" + ctrlCount);
 						ctrlCount++;
 					} else {
 						logger.error("Unsupported operation type: {}", opr.toString());

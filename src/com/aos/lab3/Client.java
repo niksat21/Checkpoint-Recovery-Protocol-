@@ -94,6 +94,13 @@ public class Client implements Runnable {
 				SctpChannel sctpChannel = SctpChannel.open();
 				sctpChannel.connect(socketAddress);
 
+				if (msg.getMsgType().equals(MessageType.APPLICATION)) {
+					if (fls[msg.getDestination()] != Integer.MIN_VALUE)
+						fls[msg.getDestination()] = appCounter;
+					lls[msg.getDestination()] = appCounter;
+					appCounter++;
+				}
+				msg.setValue(appCounter);
 				MessageInfo messageInfo = MessageInfo.createOutgoing(socketAddress, 0);
 				ByteBuffer buf = ByteBuffer.allocateDirect(500000);
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -107,13 +114,6 @@ public class Client implements Runnable {
 				bos.close();
 				buf.clear();
 
-				// TODO: Update the vectors
-				if (msg.getMsgType().equals(MessageType.APPLICATION)) {
-					appCounter++;
-					if (fls[msg.getDestination()] != Integer.MIN_VALUE)
-						fls[msg.getDestination()] = appCounter;
-					lls[msg.getDestination()]++;
-				}
 
 				return;
 			} catch (Exception e) {
@@ -169,5 +169,20 @@ public class Client implements Runnable {
 	public Integer getAppCounter() {
 		return appCounter;
 	}
+	
+	public void setLlr(Integer[] llr) {
+		this.llr = llr;
+	}
 
+	public void setFls(Integer[] fls) {
+		this.fls = fls;
+	}
+
+	public void setLls(Integer[] lls) {
+		this.lls = lls;
+	}
+
+	public Integer setAppCounter(Integer appCounter) {
+		return this.appCounter = appCounter;
+	}
 }
