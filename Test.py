@@ -3,12 +3,14 @@ __author__ = 'niksat21'
 import sys
 
 OPVsNode = {}
+NodeVsFLS = {}
+NodeVsLLR = {}
+NodeVsLLS = {}
+NodeVsNBR = {}
+
 
 def fetchGlobalState():
-    NodeVsFLS = {}
-    NodeVsLLR = {}
-    NodeVsLLS = {}
-    NodeVsNBR = {}
+
 
     # get FLS
     tFLS = line[line.index("FLS"):]
@@ -34,14 +36,16 @@ def fetchGlobalState():
     print 'NodeVsNBR', NodeVsNBR
 
 
-def checkForOrphanMsg(OpId):
-    if "R" in OpId:
-        print
-    elif "C" in OpId:
+def checkForOrphanMsg():
+    for key in OPVsNode.keys():
 
-        print
-    else:
-        print 'unsupported operation'
+        if "R" in key:
+            print
+        elif "C" in key:
+
+            print
+        else:
+            print 'unsupported operation'
 
 
 with open(sys.argv[1], 'r') as f:
@@ -70,7 +74,13 @@ with open(sys.argv[1], 'r') as f:
             else:
                 
                 currentOp=""
-                nodes=[]
                 nodes.append(nodeId)
                 OPVsNode.update({opId : nodes})
+                checkForOrphanMsg()
+                nodes=[]
+                NodeVsFLS = {}
+                NodeVsLLR = {}
+                NodeVsLLS = {}
+                NodeVsNBR = {}
+
                 fetchGlobalState()
