@@ -42,7 +42,8 @@ def checkForOrphanMsg():
         if "R" in key:
             print
         elif "C" in key:
-
+            for node in OPVsNode.get(key):
+                print 'node',node
             print
         else:
             print 'unsupported operation'
@@ -73,11 +74,14 @@ with open(sys.argv[1], 'r') as f:
                 fetchGlobalState()
             else:
                 
-                currentOp=""
-                nodes.append(nodeId)
-                OPVsNode.update({opId : nodes})
                 checkForOrphanMsg()
                 nodes=[]
+                nodes.append(nodeId)
+                OPVsNode.update({opId : nodes})
+                
+                OPVsNode.pop(currentOp,None)
+                currentOp=""
+
                 NodeVsFLS = {}
                 NodeVsLLR = {}
                 NodeVsLLS = {}
