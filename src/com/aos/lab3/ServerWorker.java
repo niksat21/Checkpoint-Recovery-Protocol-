@@ -34,7 +34,7 @@ public class ServerWorker implements Runnable {
 	private IRecoveryRequestHandler iRecoveryHandler;
 
 	public ServerWorker(Integer nodeId, SctpChannel sc, Client client, Integer labelValue, Config config,
-			AssociationHandler assocHandler, SctpServerChannel ssc, ICheckpointRequestHandler iCheckpointHandler, 
+			AssociationHandler assocHandler, SctpServerChannel ssc, ICheckpointRequestHandler iCheckpointHandler,
 			IRecoveryRequestHandler iRecoveryHandler) {
 		this.sc = sc;
 		this.nodeId = nodeId;
@@ -70,16 +70,19 @@ public class ServerWorker implements Runnable {
 				bis.close();
 
 				if (msg.getMsgType().equals(MessageType.CHECKPOINT)) {
-					iCheckpointHandler.handleCheckpointMessage(msg.getSource(), msg.getDestination(), msg.getValue(), client.fls);
+					iCheckpointHandler.handleCheckpointMessage(msg.getSource(), msg.getDestination(), msg.getValue(),
+							client.getFls(), msg.getOperationId());
 				} else if (msg.getMsgType().equals(MessageType.RECOVERY)) {
-					iRecoveryHandler.handleRecoveryMessage(msg.getSource(), msg.getDestination(), msg.getValue(), client.llr);
+					iRecoveryHandler.handleRecoveryMessage(msg.getSource(), msg.getDestination(), msg.getValue(),
+							client.getLlr());
 				} else if (msg.getMsgType().equals(MessageType.COMPLETED)) {
 					handleCompleteMessage(msg.getSource());
 					logger.error("Received COMPLETED at:{} from:{} ", msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.ACKCHECKPOINT)) {
 					iCheckpointHandler.handleAckChpMessage(msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.ACKRECOVERY)) {
-					iCheckpointHandler.handleAckChpMessage(msg.getSource(), msg.getDestination());
+
+					// FIXME: Add a handler method
 				} else {
 					logger.error("Unsupported message type : {} by the quorum handler", msg.getMsgType().toString());
 				}

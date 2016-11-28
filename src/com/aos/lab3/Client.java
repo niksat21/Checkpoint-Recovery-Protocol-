@@ -1,10 +1,5 @@
 package com.aos.lab3;
 
-import com.sun.nio.sctp.MessageInfo;
-import com.sun.nio.sctp.SctpChannel;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
@@ -15,6 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.sun.nio.sctp.MessageInfo;
+import com.sun.nio.sctp.SctpChannel;
+
 public class Client implements Runnable {
 
 	private Map<Integer, SocketAddress> nodeVsSocket = new HashMap<Integer, SocketAddress>();
@@ -23,13 +24,15 @@ public class Client implements Runnable {
 	private int labelValue;
 	private Config config;
 	private Integer nodeId;
-	static Integer[] llr;
-	static Integer[] fls;
-	static Integer[] lls;
+	private Integer[] llr;
+	private Integer[] fls;
+	private Integer[] lls;
+	private Integer appCounter = 0;
+
 	private int noOfNodes;
-	boolean tentativeCheckpoint;
-	boolean recover;
-	
+	boolean tentativeCheckpoint = false;
+	boolean recover = false;
+
 	public Client(String nodeHostname, int labelValue, Config config, Integer nodeId) {
 		this.nodeHostname = nodeHostname;
 		this.labelValue = labelValue;
@@ -84,8 +87,8 @@ public class Client implements Runnable {
 
 	public void sendMsg(Message msg) {
 		SocketAddress socketAddress = nodeVsSocket.get(msg.getDestination());
-		
-		logger.debug("Destination socket here is:{} ::{}",msg.getDestination(),socketAddress);
+
+		logger.debug("Destination socket here is:{} ::{}", msg.getDestination(), socketAddress);
 		while (true) {
 			try {
 				SctpChannel sctpChannel = SctpChannel.open();
@@ -103,6 +106,15 @@ public class Client implements Runnable {
 
 				bos.close();
 				buf.clear();
+
+				// TODO: Update the vectors
+				if (msg.getMsgType().equals(MessageType.APPLICATION)) {
+					appCounter++;
+					if (fls[msg.getDestination()] != Integer.MIN_VALUE)
+						fls[msg.getDestination()] = appCounter;
+					lls[msg.getDestination()]++;
+				}
+
 				return;
 			} catch (Exception e) {
 				logger.warn("Exception in Send()" + e);
@@ -114,7 +126,7 @@ public class Client implements Runnable {
 					e1.printStackTrace();
 				}
 			}
-	
+
 		}
 	}
 
@@ -129,9 +141,9 @@ public class Client implements Runnable {
 		}
 
 	}
-	
-	public void initVectors(){
-		for(int i=0; i<this.noOfNodes; i++){
+
+	public void initVectors() {
+		for (int i = 0; i < this.noOfNodes; i++) {
 			this.llr[i] = Integer.MIN_VALUE;
 			this.fls[i] = Integer.MIN_VALUE;
 			this.lls[i] = Integer.MIN_VALUE;
@@ -141,6 +153,21 @@ public class Client implements Runnable {
 	public Integer getNodeId() {
 		return nodeId;
 	}
-	
+
+	public Integer[] getLlr() {
+		return llr;
+	}
+
+	public Integer[] getFls() {
+		return fls;
+	}
+
+	public Integer[] getLls() {
+		return lls;
+	}
+
+	public Integer getAppCounter() {
+		return appCounter;
+	}
 
 }

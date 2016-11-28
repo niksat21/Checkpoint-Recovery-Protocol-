@@ -8,7 +8,7 @@ public interface IRecoveryRequestHandler {
 
 	public void revert();
 
-	public void requestRecovery();
+	public void requestRecovery(String operationId);
 
 	boolean isRunning();
 

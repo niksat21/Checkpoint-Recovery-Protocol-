@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Message implements Serializable{
+public class Message implements Serializable {
 
 	private Integer source;
 	private Integer destination;
@@ -13,13 +13,16 @@ public class Message implements Serializable{
 	private MessageType msgType;
 	private Long requestTS;
 	private Integer initiator;
+	private String operationId;
 
-	public Message(Integer initiator, Integer source, Integer destination, Integer value, MessageType msgType) {
+	public Message(Integer initiator, Integer source, Integer destination, Integer value, MessageType msgType,
+			String operationId) {
 		this.source = source;
 		this.destination = destination;
 		this.value = value;
 		this.msgType = msgType;
 		this.initiator = initiator;
+		this.operationId = operationId;
 	}
 
 	public Message(Integer initiator, Integer source, Integer destination, MessageType msgType) {
@@ -28,7 +31,7 @@ public class Message implements Serializable{
 		this.msgType = msgType;
 		this.initiator = initiator;
 	}
-	
+
 	public Message(Integer source, Integer destination, MessageType msgType) {
 		super();
 		this.source = source;
@@ -82,6 +85,14 @@ public class Message implements Serializable{
 
 	public void setPath(List<Integer> path) {
 		this.path = path;
+	}
+
+	public Integer getInitiator() {
+		return initiator;
+	}
+
+	public String getOperationId() {
+		return operationId;
 	}
 
 }

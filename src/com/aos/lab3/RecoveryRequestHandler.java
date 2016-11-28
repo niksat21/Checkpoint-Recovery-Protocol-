@@ -1,16 +1,19 @@
 package com.aos.lab3;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 	private Client client;
 	private Boolean isRunning;
+	private IApplicationStateHandler appStateHandler;
 
-	public RecoveryRequestHandler(Client client, Config config, Integer src) {
+	public RecoveryRequestHandler(Client client, Config config, Integer src, IApplicationStateHandler appStateHandler) {
 		// TODO Auto-generated constructor stub
 		this.client = client;
+		this.appStateHandler = appStateHandler;
 	}
 
 	@Override
@@ -21,16 +24,23 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 			if (client.recover) {
 				// revert to old state
-
+				initLLR();
 			} else {
 				// no change in state
 
 			}
 			sendAckRecovery(src, dest);
-		} else {
-			// already have recovered
-			// discard this
+			synchronized (isRunning) {
+				isRunning = Boolean.FALSE;
+			}
+		}
+	}
 
+	private void initLLR() {
+		List<Integer[]> LLR = appStateHandler.getLLR();
+		Integer[] array = LLR.get(LLR.size() - 1);
+		for (int i = 0; i < LLR.size(); i++) {
+			array[i] = Integer.MIN_VALUE;
 		}
 	}
 
@@ -52,8 +62,8 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		// TODO Auto-generated method stub
 
 		// resetting llr vector on crash
-		for (int i = 0; i < client.llr.length; i++)
-			client.llr[i] = Integer.MIN_VALUE;
+		for (int i = 0; i < client.getLlr().length; i++)
+			client.getLlr()[i] = Integer.MIN_VALUE;
 
 		Set<Integer> myBuddies = config.getNodeIdVsNeighbors().get(nodeId);
 		int dest;
@@ -61,7 +71,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 		dest = itr.next();
 		while (itr.hasNext()) {
-			Message msg = new Message(nodeId, dest, client.lls[dest], MessageType.RECOVERY);
+			Message msg = new Message(nodeId, dest, client.getLls()[dest], MessageType.RECOVERY);
 			client.sendMsg(msg);
 		}
 	}
@@ -80,9 +90,14 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	}
 
 	@Override
-	public void requestRecovery() {
+	public void requestRecovery(String operationId) {
 		// TODO Auto-generated method stub
-
+		if (!client.recover) {
+			synchronized (isRunning) {
+				isRunning = Boolean.TRUE;
+			}
+			client.recover = Boolean.TRUE;
+		}
 	}
 
 }

@@ -39,8 +39,11 @@ public class Process {
 			Thread.sleep(INITIAL_SLEEP_TIME);
 			logger.info("Sleeping for {}", INITIAL_SLEEP_TIME);
 
-			ICheckpointRequestHandler checkpointHandler = new CheckpointRequestHandler(client, config, nodeId);
-			IRecoveryRequestHandler recoveryHandler = new RecoveryRequestHandler(client, config, nodeId);
+			IApplicationStateHandler appStateHandler = new ApplicationStateHandler();
+			ICheckpointRequestHandler checkpointHandler = new CheckpointRequestHandler(client, config, nodeId,
+					appStateHandler);
+			IRecoveryRequestHandler recoveryHandler = new RecoveryRequestHandler(client, config, nodeId,
+					appStateHandler);
 			RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, checkpointHandler,
 					recoveryHandler);
 			rc.start();
