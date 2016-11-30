@@ -114,16 +114,15 @@ public class Client implements Runnable {
 				bos.close();
 				buf.clear();
 
-
 				return;
 			} catch (Exception e) {
-				logger.warn("Exception in Send()" + e);
+				logger.warn("Exception in Send()", e);
 				e.printStackTrace();
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e1) {
 					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					logger.error(e1);
 				}
 			}
 
@@ -169,7 +168,7 @@ public class Client implements Runnable {
 	public Integer getAppCounter() {
 		return appCounter;
 	}
-	
+
 	public void setLlr(Integer[] llr) {
 		this.llr = llr;
 	}

@@ -16,6 +16,9 @@ public class RequestingCandidate {
 	private IRecoveryRequestHandler recoveryHandler;
 	private ICheckpointRequestHandler checkpointHandler;
 	private Integer counter = 0;
+	private Integer opCount = 0;
+	private Iterator<Operation> oprIterator;
+	private volatile Boolean flag = Boolean.FALSE;
 
 	RequestingCandidate(Config config, Integer nodeId, Client client, ICheckpointRequestHandler checkpointHandler,
 			IRecoveryRequestHandler recoveryHandler) {
@@ -30,6 +33,9 @@ public class RequestingCandidate {
 		int appCount = 1, ctrlCount = 1;
 		long timeToSend = 0;
 
+		oprIterator = config.getOperationsList().iterator();
+		Operation opr = oprIterator.next();
+		opCount++;
 		while (ctrlCount <= config.getNoOfOperations() && appCount <= config.getNoOfMsgs()) {
 			timeToSend = System.currentTimeMillis();
 
@@ -52,27 +58,39 @@ public class RequestingCandidate {
 							appCount);
 				}
 
-				Iterator<Operation> it1 = config.getOperationsList().iterator();
-				Operation opr = it1.next();
+				logger.debug("Operation Type:{} nodeId:{} in nodeId:{}", opr.toString(), opr.getNodeId(), nodeId);
 				if (nodeId.equals(opr.getNodeId())) {
 					if (opr.getType().equals(OperationType.CHECKPOINT)) {
 						logger.debug("NodeId:{} initiated CHECKPOINT req with ctrlCount{}", nodeId, ctrlCount);
-						checkpointHandler.requestCheckpoint(counter, "C-" + ctrlCount);
+						checkpointHandler.requestCheckpoint(counter, "C-" + nodeId + "-" + opCount);
 						ctrlCount++;
 					} else if (opr.getType().equals(OperationType.RECOVERY)) {
 						logger.debug("NodeId:{} initiated RECOVERY req with ctrlCount{}", nodeId, ctrlCount);
-						recoveryHandler.requestRecovery("R-" + ctrlCount);
+						recoveryHandler.requestRecovery("R-" + nodeId + "-" + opCount);
 						ctrlCount++;
 					} else {
 						logger.error("Unsupported operation type: {}", opr.toString());
 					}
-
+				}
+				while (true) {
+					Thread.sleep(200);
+					if (flag.booleanValue() == true) {
+						flag = Boolean.FALSE;
+						break;
+					}
 				}
 
 			} else {
 				Thread.sleep(200);
 			}
 		}
+	}
+
+	public synchronized void moveToNextOpr() {
+		logger.debug("Moving to the next operation in nodeId:{}", nodeId);
+		oprIterator.next();
+		opCount++;
+		flag = Boolean.TRUE;
 	}
 
 	private static int getExpoRandom(int mean) {

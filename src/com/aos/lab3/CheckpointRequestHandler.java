@@ -2,6 +2,7 @@ package com.aos.lab3;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
@@ -17,6 +18,8 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	private IApplicationStateHandler appStateHandler;
 
 	private Set<Integer> waitingSet = new HashSet<Integer>();
+	private Set<String> operationIds = new HashSet<String>();
+	private LinkedList<Message> operationQueue = new LinkedList<Message>();
 
 	CheckpointRequestHandler(Client client, Config config, Integer src, IApplicationStateHandler appStateHandler) {
 		this.client = client;
@@ -33,21 +36,24 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 		while (itr.hasNext()) {
 			dest = itr.next();
 			Message msg = new Message(initiator, nodeId, dest, client.getLlr()[dest], msgType, operationId);
-			logger.debug("Sending checkpoint message to nodeId:{} from nodeId:{}", dest, initiator);
+			logger.debug("Sending {} message to nodeId:{} from nodeId:{}", msgType.toString(), dest, initiator);
 			client.sendMsg(msg);
-			synchronized (waitingSet) {
-				waitingSet.add(dest);
-				logger.debug("Waiting set in nodeId:{} is {}", initiator, waitingSet);
+			if (msgType.equals(MessageType.CHECKPOINT)) {
+				synchronized (waitingSet) {
+					waitingSet.add(dest);
+					logger.debug("Waiting set in nodeId:{} is {}", initiator, waitingSet);
+				}
 			}
 		}
-		logger.info("BROADCAST! at:{} inside takeCheckpoint with operationId:{}", nodeId, operationId);
 	}
 
 	@Override
-	public void handleCheckpointMessage(int src, int dest, Integer llr, Integer[] fls, String operationId)
-			throws InterruptedException {
+	public void handleCheckpointMessage(Message msg, Integer[] fls, String operationId) throws InterruptedException {
+		Integer src = msg.getSource();
+		Integer dest = msg.getDestination();
+		Integer llr = msg.getValue();
 		logger.info("HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}", src, operationId);
-		if (!client.tentativeCheckpoint) {
+		if (!client.tentativeCheckpoint && !operationIds.contains(operationId)) {
 			synchronized (isRunning) {
 				isRunning = Boolean.TRUE;
 				logger.info("isRunning TRUE HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}", src,
@@ -59,14 +65,24 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 				takeCheckpoint(src, operationId);
 			} else {
 				logger.debug("NodeId:{} is already in checkpointing process", initiator);
+				sendAck(dest, src, MessageType.ACKCHECKPOINT);
 			}
 			logger.info("HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}", src, operationId);
+		} else if (client.tentativeCheckpoint && !operationIds.contains(operationId)) {
+			operationQueue.add(msg);
+			logger.debug("Queued msg type: {} from nodeId:{} at nodeId:{} by initiator:{}", msg.getMsgType(),
+					msg.getSource(), msg.getDestination(), msg.getInitiator());
+		} else if (operationId.contains(operationId)) {
+			logger.debug(
+					"Operation set in nodeId:{} already contains operationId:{}. Sending ACK to nodeId:{} initiator:{}",
+					initiator, operationId, src, msg.getInitiator());
+			sendAck(dest, src, MessageType.ACKCHECKPOINT);
 		}
-		sendAck(dest, src, MessageType.ACKCHECKPOINT);
 	}
 
 	private void takeCheckpoint(Integer src, String operationId) throws InterruptedException {
 		if (client.tentativeCheckpoint) {
+			operationIds.add(operationId);
 			saveState();
 			logger.info("SAVED STATED! at:{} inside takeCheckpoint with operationId:{}", src, operationId);
 			client.initVectors();
@@ -78,9 +94,20 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 				}
 				Thread.sleep(200);
 			}
-		}
-		synchronized (isRunning) {
-			isRunning = Boolean.FALSE;
+			logger.info("Checkpointing completed at nodeId:{} initiated by nodeId:{}", initiator, src);
+			synchronized (isRunning) {
+				isRunning = Boolean.FALSE;
+				client.tentativeCheckpoint = Boolean.FALSE;
+			}
+			sendAck(initiator, src, MessageType.ACKCHECKPOINT);
+
+			if (!operationQueue.isEmpty()) {
+				Message msg = operationQueue.removeFirst();
+				handleCheckpointMessage(msg, client.getFls(), msg.getOperationId());
+			}
+
+		} else {
+			logger.debug("Something wrong in nodeId:{} ", initiator);
 		}
 	}
 
@@ -126,7 +153,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	@Override
 	public void requestCheckpoint(Integer counter, String operationId) throws InterruptedException {
 		logger.info("Came inside requestCheckpoint with counter:{} and operationId:{}", counter, operationId);
-		if (!client.tentativeCheckpoint) {
+		if (!client.tentativeCheckpoint && !operationIds.contains(operationId)) {
 			synchronized (isRunning) {
 				isRunning = Boolean.TRUE;
 			}

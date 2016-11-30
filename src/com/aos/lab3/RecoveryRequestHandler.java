@@ -2,6 +2,7 @@ package com.aos.lab3;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -19,6 +20,8 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	private Set<Integer> cohorts;
 	private Config config;
 	private Integer initiator;
+	private Set<String> operationIds = new HashSet<String>();
+	private LinkedList<Message> operationQueue = new LinkedList<Message>();
 
 	public RecoveryRequestHandler(Client client, Config config, Integer src, IApplicationStateHandler appStateHandler) {
 		this.client = client;
@@ -29,11 +32,14 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	}
 
 	@Override
-	public void handleRecoveryMessage(int src, int dest, Integer lls, Integer[] llr, String operationId)
-			throws InterruptedException {
+	public void handleRecoveryMessage(Message msg, Integer[] llr, String operationId) throws InterruptedException {
+		Integer src = msg.getSource();
+		Integer dest = msg.getDestination();
+		Integer lls = msg.getValue();
+
 		logger.debug("Received recovery message from nodeId:{} in nodeId:{} with LLS:{} current LLR:{} operationId:{}",
 				src, dest, lls, llr, operationId);
-		if (!client.recover) {
+		if (!client.recover && !operationIds.contains(operationId)) {
 			client.recover = shouldIRollback(src, dest, lls, llr);
 
 			if (client.recover) {
@@ -42,12 +48,21 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 				doRollback(src, operationId);
 			} else {
 				logger.debug("NodeId:{} is already in recovery mode", initiator);
+				sendAckRecovery(src, dest);
 			}
+
+		} else if (client.recover && !operationIds.contains(operationId)) {
+			operationQueue.add(msg);
+			logger.debug("Queued msg type: {} from nodeId:{} at nodeId:{} by initiator:{}", msg.getMsgType(),
+					msg.getSource(), msg.getDestination(), msg.getInitiator());
+
+		} else if (operationId.contains(operationId)) {
+			logger.debug(
+					"Operation set in nodeId:{} already contains operationId:{}. Sending ACK to nodeId:{} initiator:{}",
+					initiator, operationId, src, msg.getInitiator());
+			sendAckRecovery(src, dest);
 		}
-		sendAckRecovery(src, dest);
-		synchronized (isRunning) {
-			isRunning = Boolean.FALSE;
-		}
+
 	}
 
 	private void resetClientVectorsToLastCheckpointedVal() {
@@ -92,28 +107,31 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	}
 
 	@Override
-	public void broadcastRollback(Config config, Integer nodeId, MessageType msgType, String operationId) {
+	public void broadcast(Config config, Integer nodeId, MessageType msgType, String operationId) {
 		int dest;
 		Iterator<Integer> itr = cohorts.iterator();
-		logger.debug("Broadcasting rollback message from nodeId:{}", initiator);
+		logger.debug("Broadcasting {} message from nodeId:{}", msgType.toString(), initiator);
 		while (itr.hasNext()) {
 			dest = itr.next();
 			List<Integer[]> llsList = appStateHandler.getLLS();
 			Message msg = new Message(initiator, nodeId, dest, llsList.get(llsList.size() - 1)[dest], msgType,
 					operationId);
-			logger.debug("Sending rollback message to nodeId:{} from nodeId:{}", dest, initiator);
+			logger.debug("Sending {} message to nodeId:{} from nodeId:{}", msgType.toString(), dest, initiator);
 			client.sendMsg(msg);
-			synchronized (waitingSet) {
-				waitingSet.add(dest);
-				logger.debug("Waiting set of nodeId:{} is {}", initiator, waitingSet);
+			if (msgType.equals(MessageType.RECOVERY)) {
+				synchronized (waitingSet) {
+					waitingSet.add(dest);
+					logger.debug("Waiting set of nodeId:{} is {}", initiator, waitingSet);
+				}
 			}
 		}
 	}
 
 	private void doRollback(Integer src, String operationId) throws InterruptedException {
 		if (client.recover) {
+			operationIds.add(operationId);
 			initLLR();
-			broadcastRollback(config, initiator, MessageType.RECOVERY, operationId);
+			broadcast(config, initiator, MessageType.RECOVERY, operationId);
 			while (true) {
 				synchronized (waitingSet) {
 					if (waitingSet.isEmpty())
@@ -122,8 +140,16 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 				Thread.sleep(200);
 			}
 		}
+		sendAckRecovery(initiator, src);
 		synchronized (isRunning) {
 			isRunning = Boolean.FALSE;
+			client.recover = Boolean.FALSE;
+		}
+		logger.info("Recovery completed at nodeId:{} initiated by nodeId:{} ", initiator, src);
+
+		if (!operationQueue.isEmpty()) {
+			Message msg = operationQueue.removeFirst();
+			handleRecoveryMessage(msg, client.getLlr(), msg.getOperationId());
 		}
 	}
 
@@ -142,13 +168,15 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 	@Override
 	public void requestRecovery(String operationId) throws InterruptedException {
-		if (!client.recover) {
+		if (!client.recover && !operationIds.contains(operationId)) {
 			synchronized (isRunning) {
 				isRunning = Boolean.TRUE;
 			}
 			client.recover = Boolean.TRUE;
 			resetClientVectorsToLastCheckpointedVal();
 			doRollback(initiator, operationId);
+		} else {
+			logger.debug("Something wrong in nodeId:{}", initiator);
 		}
 	}
 

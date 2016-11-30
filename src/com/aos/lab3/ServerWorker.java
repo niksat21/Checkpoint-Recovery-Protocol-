@@ -32,10 +32,11 @@ public class ServerWorker implements Runnable {
 	private SctpServerChannel ssc;
 	private ICheckpointRequestHandler iCheckpointHandler;
 	private IRecoveryRequestHandler iRecoveryHandler;
+	private RequestingCandidate reqCandidate;
 
 	public ServerWorker(Integer nodeId, SctpChannel sc, Client client, Integer labelValue, Config config,
 			AssociationHandler assocHandler, SctpServerChannel ssc, ICheckpointRequestHandler iCheckpointHandler,
-			IRecoveryRequestHandler iRecoveryHandler) {
+			IRecoveryRequestHandler iRecoveryHandler, RequestingCandidate reqCandidate) {
 		this.sc = sc;
 		this.nodeId = nodeId;
 		this.client = client;
@@ -45,6 +46,7 @@ public class ServerWorker implements Runnable {
 		this.ssc = ssc;
 		this.iCheckpointHandler = iCheckpointHandler;
 		this.iRecoveryHandler = iRecoveryHandler;
+		this.reqCandidate = reqCandidate;
 		noOfNodes = config.getNoOfNodes();
 	}
 
@@ -70,11 +72,9 @@ public class ServerWorker implements Runnable {
 				bis.close();
 
 				if (msg.getMsgType().equals(MessageType.CHECKPOINT)) {
-					iCheckpointHandler.handleCheckpointMessage(msg.getSource(), msg.getDestination(), msg.getValue(),
-							client.getFls(), msg.getOperationId());
+					iCheckpointHandler.handleCheckpointMessage(msg, client.getFls(), msg.getOperationId());
 				} else if (msg.getMsgType().equals(MessageType.RECOVERY)) {
-					iRecoveryHandler.handleRecoveryMessage(msg.getSource(), msg.getDestination(), msg.getValue(),
-							client.getLlr(), msg.getOperationId());
+					iRecoveryHandler.handleRecoveryMessage(msg, client.getLlr(), msg.getOperationId());
 				} else if (msg.getMsgType().equals(MessageType.COMPLETED)) {
 					handleCompleteMessage(msg.getSource());
 					logger.error("Received COMPLETED at:{} from:{} ", msg.getSource(), msg.getDestination());

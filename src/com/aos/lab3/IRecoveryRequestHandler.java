@@ -2,9 +2,9 @@ package com.aos.lab3;
 
 public interface IRecoveryRequestHandler {
 
-	public void handleRecoveryMessage(int src, int dest, Integer llr, Integer[] lls, String operationId) throws InterruptedException;
+	public void handleRecoveryMessage(Message msg, Integer[] lls, String operationId) throws InterruptedException;
 
-	public void broadcastRollback(Config config, Integer nodeId, MessageType msgType, String operationId);
+	public void broadcast(Config config, Integer nodeId, MessageType msgType, String operationId);
 
 	public void revert();
 

@@ -28,13 +28,8 @@ public class Process {
 			Server server = new Server(nodeId, labelValue, node.getPort(), config);
 			Client client = new Client(hostname, labelValue, config, nodeId);
 			server.setClientHandler(client);
-
 			Thread clientThread = new Thread(client, "client-thread");
 			Thread serverThread = new Thread(server, "server-thread");
-
-			// Wait for other nodes to come up
-			Thread.sleep(INITIAL_SLEEP_TIME);
-			logger.info("Sleeping for {}", INITIAL_SLEEP_TIME);
 
 			IApplicationStateHandler appStateHandler = new ApplicationStateHandler();
 			ICheckpointRequestHandler checkpointHandler = new CheckpointRequestHandler(client, config, nodeId,
@@ -45,8 +40,12 @@ public class Process {
 			server.setRecovereHandler(recoveryHandler);
 			RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, checkpointHandler,
 					recoveryHandler);
+			server.setReqCandidate(rc);
 			clientThread.start();
 			serverThread.start();
+			// Wait for other nodes to come up
+			logger.info("Sleeping for {}", INITIAL_SLEEP_TIME);
+			Thread.sleep(INITIAL_SLEEP_TIME);
 			rc.start();
 		} catch (Exception e) {
 			logger.error("Exception in Process", e);

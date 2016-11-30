@@ -24,6 +24,7 @@ public class Server implements Runnable {
 	private SctpChannel sc;
 	private IRecoveryRequestHandler iRecovereHandler;
 	private ICheckpointRequestHandler iCheckpointHandler;
+	private RequestingCandidate reqCandidate;
 
 	public Server(Integer nodeId, Integer labelValue, Integer port, Config config) {
 		this.nodeId = nodeId;
@@ -39,6 +40,14 @@ public class Server implements Runnable {
 		} catch (Exception e) {
 			logger.error(e);
 		}
+	}
+
+	public RequestingCandidate getReqCandidate() {
+		return reqCandidate;
+	}
+
+	public void setReqCandidate(RequestingCandidate reqCandidate) {
+		this.reqCandidate = reqCandidate;
 	}
 
 	public void setClientHandler(Client client) {
@@ -63,7 +72,7 @@ public class Server implements Runnable {
 
 				sc = ssc.accept();
 				ServerWorker worker = new ServerWorker(nodeId, sc, client, labelValue, config, assocHandler, ssc,
-						iCheckpointHandler, iRecovereHandler);
+						iCheckpointHandler, iRecovereHandler, reqCandidate);
 				logger.debug("Created server worker");
 				Thread workerThread = new Thread(worker);
 				logger.debug("Created server worker thread");
