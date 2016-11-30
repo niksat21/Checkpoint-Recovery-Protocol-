@@ -44,6 +44,8 @@ public class Process {
 					appStateHandler);
 			IRecoveryRequestHandler recoveryHandler = new RecoveryRequestHandler(client, config, nodeId,
 					appStateHandler);
+			server.setCheckpointHandler(checkpointHandler);
+			server.setRecovereHandler(recoveryHandler);
 			RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, checkpointHandler,
 					recoveryHandler);
 			rc.start();
