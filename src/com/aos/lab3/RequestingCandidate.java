@@ -48,7 +48,7 @@ public class RequestingCandidate {
 					counter++;
 					appCount++;
 					timeToSend = System.currentTimeMillis();
-					logger.info("Operation:{} at NODE:{} with counter:{} and appCount:{}", i, nodeId, counter,
+					logger.info("Operation:{} at nodeId:{} with counter:{} and appCount:{}", i, nodeId, counter,
 							appCount);
 				}
 

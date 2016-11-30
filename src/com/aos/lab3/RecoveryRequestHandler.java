@@ -13,7 +13,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	private static final Logger logger = LogManager.getLogger(RecoveryRequestHandler.class);
 
 	private Client client;
-	private Boolean isRunning;
+	private Boolean isRunning = Boolean.FALSE;
 	private IApplicationStateHandler appStateHandler;
 	private Set<Integer> waitingSet = new HashSet<Integer>();
 	private Set<Integer> cohorts;
