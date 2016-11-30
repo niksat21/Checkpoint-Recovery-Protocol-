@@ -79,6 +79,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	}
 
 	private void sendAckRecovery(int src, int dest) {
+		logger.debug("Sending recovery ACK message to nodeId:{} from nodeId:{}", src, dest);
 		client.sendMsg(new Message(dest, src, MessageType.ACKRECOVERY));
 	}
 
