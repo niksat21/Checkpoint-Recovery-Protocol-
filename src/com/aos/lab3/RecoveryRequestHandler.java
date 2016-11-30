@@ -5,10 +5,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
+	private static final Logger logger = LogManager.getLogger(RecoveryRequestHandler.class);
+
 	private Client client;
-	private Boolean isRunning;
+	private Boolean isRunning = Boolean.FALSE;
 	private IApplicationStateHandler appStateHandler;
 	private Set<Integer> waitingSet = new HashSet<Integer>();
 	private Set<Integer> cohorts;
@@ -26,7 +31,8 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	@Override
 	public void handleRecoveryMessage(int src, int dest, Integer lls, Integer[] llr, String operationId)
 			throws InterruptedException {
-		// TODO Auto-generated method stub
+		logger.debug("Received recovery message from nodeId:{} in nodeId:{} with LLS:{} current LLR:{} operationId:{}",
+				src, dest, lls, llr, operationId);
 		if (!client.recover) {
 			client.recover = shouldIRollback(src, dest, lls, llr);
 
@@ -35,7 +41,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 				resetClientVectorsToLastCheckpointedVal();
 				doRollback(src, operationId);
 			} else {
-				// no change in state
+				logger.debug("NodeId:{} is already in recovery mode", initiator);
 			}
 		}
 		sendAckRecovery(src, dest);
@@ -49,19 +55,27 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		List<Integer[]> llsList = appStateHandler.getLLS();
 		List<Integer[]> flsList = appStateHandler.getFLS();
 		List<Integer> appValues = appStateHandler.getAppValues();
-		client.setLlr(llrList.get(llrList.size() - 1));
-		client.setLls(llsList.get(llsList.size() - 1));
-		client.setFls(flsList.get(flsList.size() - 1));
-		client.setAppCounter(appValues.get(appValues.size() - 1));
+		Integer[] llr = llrList.get(llrList.size() - 1);
+		Integer[] lls = llsList.get(llsList.size() - 1);
+		Integer[] fls = flsList.get(flsList.size() - 1);
+		Integer appCounter = appValues.get(appValues.size() - 1);
+		client.setLlr(llr);
+		client.setLls(lls);
+		client.setFls(fls);
+		client.setAppCounter(appCounter);
+		logger.debug("Resetting vector values in nodeId:{} to LLR:{} LLS:{} FLS:{} AppCounter:{}", initiator, llr, lls,
+				fls, appCounter);
 	}
 
 	private void initLLR() {
 		List<Integer[]> LLR = appStateHandler.getLLR();
 		Integer[] array = LLR.get(LLR.size() - 1);
+		logger.debug("LLR values in nodeId:{} before reset {}", initiator, LLR);
 		for (int i = 0; i < LLR.size(); i++) {
 			array[i] = Integer.MIN_VALUE;
 		}
 		client.setLlr(array);
+		logger.debug("Initialized LLR in nodeId:{} to {}", initiator, array);
 	}
 
 	private void sendAckRecovery(int src, int dest) {
@@ -80,14 +94,17 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	public void broadcastRollback(Config config, Integer nodeId, MessageType msgType, String operationId) {
 		int dest;
 		Iterator<Integer> itr = cohorts.iterator();
+		logger.debug("Broadcasting rollback message from nodeId:{}", initiator);
 		while (itr.hasNext()) {
 			dest = itr.next();
 			List<Integer[]> llsList = appStateHandler.getLLS();
 			Message msg = new Message(initiator, nodeId, dest, llsList.get(llsList.size() - 1)[dest], msgType,
 					operationId);
+			logger.debug("Sending rollback message to nodeId:{} from nodeId:{}", dest, initiator);
 			client.sendMsg(msg);
 			synchronized (waitingSet) {
 				waitingSet.add(dest);
+				logger.debug("Waiting set of nodeId:{} is {}", initiator, waitingSet);
 			}
 		}
 	}
@@ -136,8 +153,10 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 	@Override
 	public void handleAckRcvMessage(Integer source, Integer destination) {
+		logger.debug("Received ACK for recovery msg in nodeId:{} from nodeId:{}", destination, source);
 		synchronized (waitingSet) {
 			waitingSet.remove(source);
+			logger.debug("Waiting set in nodeId:{} is {}", initiator, waitingSet);
 		}
 	}
 

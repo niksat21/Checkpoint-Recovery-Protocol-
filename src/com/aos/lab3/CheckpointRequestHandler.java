@@ -10,7 +10,7 @@ import org.apache.logging.log4j.Logger;
 public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	private static Logger logger = LogManager.getLogger(CheckpointRequestHandler.class);
 	private Client client;
-	private Boolean isRunning;
+	private Boolean isRunning = Boolean.FALSE;
 	private Config config;
 	private Set<Integer> cohorts;
 	private Integer initiator;
@@ -33,9 +33,11 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 		while (itr.hasNext()) {
 			dest = itr.next();
 			Message msg = new Message(initiator, nodeId, dest, client.getLlr()[dest], msgType, operationId);
+			logger.debug("Sending checkpoint message to nodeId:{} from nodeId:{}", dest, initiator);
 			client.sendMsg(msg);
 			synchronized (waitingSet) {
 				waitingSet.add(dest);
+				logger.debug("Waiting set in nodeId:{} is {}", initiator, waitingSet);
 			}
 		}
 		logger.info("BROADCAST! at:{} inside takeCheckpoint with operationId:{}", nodeId, operationId);
@@ -52,9 +54,12 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 						operationId);
 			}
 			client.tentativeCheckpoint = canITakeCheckpoint(src, dest, llr, fls);
-			logger.info("Node :{} took tentative checkpoint with operationId:{}", src, operationId);
-			if (client.tentativeCheckpoint)
+			if (client.tentativeCheckpoint) {
+				logger.info("Node :{} took tentative checkpoint with operationId:{}", src, operationId);
 				takeCheckpoint(src, operationId);
+			} else {
+				logger.debug("NodeId:{} is already in checkpointing process", initiator);
+			}
 			logger.info("HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}", src, operationId);
 		}
 		sendAck(dest, src, MessageType.ACKCHECKPOINT);
@@ -80,6 +85,8 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	}
 
 	private void saveState() {
+		logger.debug("Saving vector values in nodeId:{}. LLR:{} LLS:{} FLS:{}", initiator, client.getLlr(),
+				client.getLls(), client.getFls());
 		appStateHandler.getAppValues().add(client.getAppCounter());
 		appStateHandler.getLLR().add(client.getLlr());
 		appStateHandler.getLLS().add(client.getLls());
@@ -102,8 +109,10 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 	@Override
 	public void handleAckChpMessage(Integer source, Integer destination) {
+		logger.debug("Received checkpoint ACK message from nodeId:{} in nodeId:{}", source, destination);
 		synchronized (waitingSet) {
 			waitingSet.remove(source);
+			logger.debug("Waiting set in nodeId:{} is {}", initiator, waitingSet);
 		}
 	}
 
@@ -123,6 +132,8 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 			}
 			client.tentativeCheckpoint = Boolean.TRUE;
 			takeCheckpoint(initiator, operationId);
+		} else {
+			logger.debug("NodeId:{} has already taken a tentative checkpoint", initiator);
 		}
 	}
 }
