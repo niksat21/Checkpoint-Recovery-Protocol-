@@ -37,7 +37,7 @@ public class Server implements Runnable {
 		try {
 			listenForConnections();
 		} catch (Exception e) {
-			//logger.error(e);
+			logger.error(e);
 		}
 	}
 
@@ -48,11 +48,11 @@ public class Server implements Runnable {
 	public void setRecovereHandler(IRecoveryRequestHandler iRecovereHandler) {
 		this.iRecovereHandler = iRecovereHandler;
 	}
-	
+
 	public void setCheckpointHandler(ICheckpointRequestHandler iCheckpointHandler) {
 		this.iCheckpointHandler = iCheckpointHandler;
 	}
-	
+
 	private void listenForConnections() throws Exception {
 		SctpServerChannel ssc = SctpServerChannel.open();
 		InetSocketAddress serverAddr = new InetSocketAddress(port);
@@ -60,10 +60,10 @@ public class Server implements Runnable {
 		AssociationHandler assocHandler = new AssociationHandler();
 		try {
 			while (true) {
-				
+
 				sc = ssc.accept();
-				ServerWorker worker = new ServerWorker(nodeId, sc, client, labelValue, config, assocHandler,
-						ssc, iCheckpointHandler, iRecovereHandler);
+				ServerWorker worker = new ServerWorker(nodeId, sc, client, labelValue, config, assocHandler, ssc,
+						iCheckpointHandler, iRecovereHandler);
 				logger.debug("Created server worker");
 				Thread workerThread = new Thread(worker);
 				logger.debug("Created server worker thread");

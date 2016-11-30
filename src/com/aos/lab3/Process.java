@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 
 public class Process {
 
-	private static final int INITIAL_SLEEP_TIME = 6000;
+	private static final int INITIAL_SLEEP_TIME = 8000;
 	private static Logger logger = LogManager.getLogger(Process.class);
 	private static Random rand = new Random();
 	private static int labelValue = rand.nextInt(9) + 1;
@@ -32,9 +32,6 @@ public class Process {
 			Thread clientThread = new Thread(client, "client-thread");
 			Thread serverThread = new Thread(server, "server-thread");
 
-			clientThread.start();
-			serverThread.start();
-
 			// Wait for other nodes to come up
 			Thread.sleep(INITIAL_SLEEP_TIME);
 			logger.info("Sleeping for {}", INITIAL_SLEEP_TIME);
@@ -48,6 +45,8 @@ public class Process {
 			server.setRecovereHandler(recoveryHandler);
 			RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, checkpointHandler,
 					recoveryHandler);
+			clientThread.start();
+			serverThread.start();
 			rc.start();
 		} catch (Exception e) {
 			logger.error("Exception in Process", e);
