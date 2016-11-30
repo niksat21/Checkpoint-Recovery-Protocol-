@@ -48,7 +48,7 @@ public class RequestingCandidate {
 					counter++;
 					appCount++;
 					timeToSend = System.currentTimeMillis();
-					logger.info("Operation:{} at nodeId:{} with counter:{} and appCount:{}", i, nodeId, counter,
+					logger.trace("Operation:{} at nodeId:{} with counter:{} and appCount:{}", i, nodeId, counter,
 							appCount);
 				}
 
@@ -56,13 +56,13 @@ public class RequestingCandidate {
 				Operation opr = it1.next();
 				if (nodeId.equals(opr.getNodeId())) {
 					if (opr.getType().equals(OperationType.CHECKPOINT)) {
+						logger.debug("NodeId:{} initiated CHECKPOINT req with ctrlCount{}", nodeId, ctrlCount);
 						checkpointHandler.requestCheckpoint(counter, "C-" + ctrlCount);
 						ctrlCount++;
-						logger.info("NodeId:{} initiated CHECKPOINT req with ctrlCount{}", nodeId, ctrlCount);
 					} else if (opr.getType().equals(OperationType.RECOVERY)) {
+						logger.debug("NodeId:{} initiated RECOVERY req with ctrlCount{}", nodeId, ctrlCount);
 						recoveryHandler.requestRecovery("R-" + ctrlCount);
 						ctrlCount++;
-						logger.info("NodeId:{} initiated RECOVERY req with ctrlCount{}", nodeId, ctrlCount);
 					} else {
 						logger.error("Unsupported operation type: {}", opr.toString());
 					}

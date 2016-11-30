@@ -81,16 +81,15 @@ public class ServerWorker implements Runnable {
 				} else if (msg.getMsgType().equals(MessageType.ACKCHECKPOINT)) {
 					iCheckpointHandler.handleAckChpMessage(msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.ACKRECOVERY)) {
-					iRecoveryHandler.handleAckRcvMessage(msg.getSource(), msg.getDestination());	
+					iRecoveryHandler.handleAckRcvMessage(msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.APPLICATION)) {
 					client.getLlr()[msg.getSource()] = msg.getValue();
-				}
-					else {
+				} else {
 					logger.error("Unsupported message type : {} by the quorum handler", msg.getMsgType().toString());
 				}
 			}
 		} catch (Exception e) {
-			// logger.error("Exception in Server Worker thread", e);
+			logger.error("Exception in Server Worker thread", e);
 		}
 	}
 
