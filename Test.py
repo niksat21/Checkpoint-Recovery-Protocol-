@@ -29,22 +29,48 @@ def fetchGlobalState():
     NBR = tNBR[11:tNBR.index("]")].split(", ")
     NodeVsNBR.update({nodeId: NBR})
 
-    print 'OPVsNode',OPVsNode
-    print 'NodeVsFLS', NodeVsFLS
-    print 'NodeVsLLR', NodeVsLLR
-    print 'NodeVsLLS', NodeVsLLS
-    print 'NodeVsNBR', NodeVsNBR
-
 
 def checkForOrphanMsg():
     for key in OPVsNode.keys():
 
         if "R" in key:
-            print
+             for node in OPVsNode.get(key):
+
+                nbr = NodeVsNBR.get(node)
+                for i in range(len(nbr)):
+
+                    getLLS = NodeVsLLS.get(nbr[i])
+                    getLLR = NodeVsLLR.get(node)
+                    getLLS=str(getLLS).replace("[","")
+                    getLLS=str(getLLS).replace("]","")
+                    getLLR=str(getLLR).replace("[","")
+                    getLLR=str(getLLR).replace("]","")
+                    getLLS=str(getLLS).replace("'","")
+                    getLLR=str(getLLR).replace("'","")
+
+
+                    if str(getLLS).split(",")[int(node)]<str(getLLR).split(",")[int(nbr[i])]:
+                        print 'Recovery issue: ',node,nbr[i]
+
         elif "C" in key:
             for node in OPVsNode.get(key):
-                print 'node',node
-            print
+
+                nbr = NodeVsNBR.get(node)
+                for i in range(len(nbr)):
+
+                    getFLS = NodeVsFLS.get(nbr[i])
+                    getLLR = NodeVsLLR.get(node)
+                    getFLS=str(getFLS).replace("[","")
+                    getFLS=str(getFLS).replace("]","")
+                    getLLR=str(getLLR).replace("[","")
+                    getLLR=str(getLLR).replace("]","")
+                    getFLS=str(getFLS).replace("'","")
+                    getLLR=str(getLLR).replace("'","")
+
+
+                    if str(getFLS).split(",")[int(node)]<str(getLLR).split(",")[int(nbr[i])]:
+                        print 'CheckPoint issue: ',node,nbr[i]
+
         else:
             print 'unsupported operation'
 
@@ -58,7 +84,7 @@ with open(sys.argv[1], 'r') as f:
             nodeId = line[line.index("NodeId") + 7:line.index("NodeId") + 8]
             opId = line[line.index("OperationId") + 12:line.index("OperationId") + 15]
 
-            print nodeId, opId, currentOp
+
             if currentOp == "":
                 
                 currentOp = opId
@@ -78,7 +104,7 @@ with open(sys.argv[1], 'r') as f:
                 nodes=[]
                 nodes.append(nodeId)
                 OPVsNode.update({opId : nodes})
-                
+
                 OPVsNode.pop(currentOp,None)
                 currentOp=""
 
