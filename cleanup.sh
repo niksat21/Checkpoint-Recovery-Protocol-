@@ -6,13 +6,13 @@ netid=axr140930
 
 #
 # Root directory of your project
-PROJDIR=$HOME/AOS_Project2/com.aos.lab2
+PROJDIR=$HOME/AOS_Project3/com.aos.lab3
 
 #
 # This assumes your config file is named "config.txt"
 # and is located in your project directory
 #
-CONFIG=$PROJDIR/config.txt
+CONFIG=$PROJDIR/conf/config.txt
 
 #
 # Directory your java classes are in
@@ -22,7 +22,7 @@ BINDIR=$PROJDIR/bin
 #
 # Your main project class
 #
-#PROG=Project1
+#PROG=Project3
 
 n=1
 
