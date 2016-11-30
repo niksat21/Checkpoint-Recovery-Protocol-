@@ -48,6 +48,8 @@ public class RequestingCandidate {
 					counter++;
 					appCount++;
 					timeToSend = System.currentTimeMillis();
+					logger.info("Operation:{} at NODE:{} with counter:{} and appCount:{}", i, nodeId, counter,
+							appCount);
 				}
 
 				Iterator<Operation> it1 = config.getOperationsList().iterator();
@@ -56,9 +58,11 @@ public class RequestingCandidate {
 					if (opr.getType().equals(OperationType.CHECKPOINT)) {
 						checkpointHandler.requestCheckpoint(counter, "C-" + ctrlCount);
 						ctrlCount++;
+						logger.info("NodeId:{} initiated CHECKPOINT req with ctrlCount{}", nodeId, ctrlCount);
 					} else if (opr.getType().equals(OperationType.RECOVERY)) {
 						recoveryHandler.requestRecovery("R-" + ctrlCount);
 						ctrlCount++;
+						logger.info("NodeId:{} initiated RECOVERY req with ctrlCount{}", nodeId, ctrlCount);
 					} else {
 						logger.error("Unsupported operation type: {}", opr.toString());
 					}

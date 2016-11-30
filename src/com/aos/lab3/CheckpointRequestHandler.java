@@ -4,8 +4,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class CheckpointRequestHandler implements ICheckpointRequestHandler {
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+public class CheckpointRequestHandler implements ICheckpointRequestHandler {
+	private static Logger logger = LogManager.getLogger(CheckpointRequestHandler.class);
 	private Client client;
 	private Boolean isRunning;
 	private Config config;
@@ -35,18 +38,24 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 				waitingSet.add(dest);
 			}
 		}
+		logger.info("BROADCAST! at:{} inside takeCheckpoint with operationId:{}", nodeId, operationId);
 	}
 
 	@Override
 	public void handleCheckpointMessage(int src, int dest, Integer llr, Integer[] fls, String operationId)
 			throws InterruptedException {
+		logger.info("HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}", src, operationId);
 		if (!client.tentativeCheckpoint) {
 			synchronized (isRunning) {
 				isRunning = Boolean.TRUE;
+				logger.info("isRunning TRUE HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}", src,
+						operationId);
 			}
 			client.tentativeCheckpoint = canITakeCheckpoint(src, dest, llr, fls);
+			logger.info("Node :{} took tentative checkpoint with operationId:{}", src, operationId);
 			if (client.tentativeCheckpoint)
 				takeCheckpoint(src, operationId);
+			logger.info("HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}", src, operationId);
 		}
 		sendAck(dest, src, MessageType.ACKCHECKPOINT);
 	}
@@ -54,6 +63,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	private void takeCheckpoint(Integer src, String operationId) throws InterruptedException {
 		if (client.tentativeCheckpoint) {
 			saveState();
+			logger.info("SAVED STATED! at:{} inside takeCheckpoint with operationId:{}", src, operationId);
 			client.initVectors();
 			broadcast(config, initiator, MessageType.CHECKPOINT, operationId);
 			while (true) {
@@ -74,9 +84,11 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 		appStateHandler.getLLR().add(client.getLlr());
 		appStateHandler.getLLS().add(client.getLls());
 		appStateHandler.getFLS().add(client.getFls());
+		logger.info("SAVED STATE! at:{}", client.getNodeId());
 	}
 
 	private void sendAck(int src, int dest, MessageType msgType) {
+		logger.info("SENDACK! at:{} to:{}", src, dest);
 		this.client.sendMsg(new Message(initiator, src, dest, msgType));
 	}
 
@@ -104,6 +116,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 	@Override
 	public void requestCheckpoint(Integer counter, String operationId) throws InterruptedException {
+		logger.info("Came inside requestCheckpoint with counter:{} and operationId:{}", counter, operationId);
 		if (!client.tentativeCheckpoint) {
 			synchronized (isRunning) {
 				isRunning = Boolean.TRUE;
