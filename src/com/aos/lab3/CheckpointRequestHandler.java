@@ -52,7 +52,8 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 		Integer src = msg.getSource();
 		Integer dest = msg.getDestination();
 		Integer llr = msg.getValue();
-		logger.info("HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}", src, operationId);
+		logger.info("HANDLECHECKPOINT! at:{} from:{} value: {} and fls:{} inside take Checkpoint with operationId:{}",
+				dest, src, llr, fls, operationId);
 		if (!client.tentativeCheckpoint && !operationIds.contains(operationId)) {
 			synchronized (isRunning) {
 				isRunning = Boolean.TRUE;
@@ -60,6 +61,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 						operationId);
 			}
 			client.tentativeCheckpoint = canITakeCheckpoint(src, dest, llr, fls);
+			logger.info("Node :{} can take CHECKPOINT??:{}", src, client.tentativeCheckpoint);
 			if (client.tentativeCheckpoint) {
 				logger.info("Node :{} took tentative checkpoint with operationId:{}", src, operationId);
 				takeCheckpoint(src, operationId);
@@ -128,6 +130,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 	public boolean canITakeCheckpoint(int src, int dest, Integer llr, Integer[] fls) {
 		// checkpoint condition
+		logger.info("checkpoint condition!!!!!!! llr:{} >= fls[{}]:{} >min:{}", llr, src, fls[src], Integer.MIN_VALUE);
 		if ((llr >= fls[src]) && (fls[src] > Integer.MIN_VALUE))
 			return true;
 		else

@@ -99,7 +99,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	}
 
 	private boolean shouldIRollback(int src, int dest, Integer lls, Integer[] llr) {
-
+		logger.info("RECOVERY condition!!!!!!! llr[{}]:{} > lls:{} ", src, llr[src], lls);
 		if (llr[src] > lls)
 			return true;
 		else

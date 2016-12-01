@@ -72,17 +72,25 @@ public class ServerWorker implements Runnable {
 				bis.close();
 
 				if (msg.getMsgType().equals(MessageType.CHECKPOINT)) {
+					logger.debug("RECEIVED CHECKPOINT MSG at:{} from:{} with fls:{}", msg.getDestination(),
+							msg.getSource(), client.getFls());
 					iCheckpointHandler.handleCheckpointMessage(msg, client.getFls(), msg.getOperationId());
 				} else if (msg.getMsgType().equals(MessageType.RECOVERY)) {
+					logger.debug("RECEIVED RECIVERY MSG at:{} from:{} with LLR:{}", msg.getDestination(),
+							msg.getSource(), client.getLlr());
 					iRecoveryHandler.handleRecoveryMessage(msg, client.getLlr(), msg.getOperationId());
 				} else if (msg.getMsgType().equals(MessageType.COMPLETED)) {
+					logger.debug("Received COMPLETED at:{} from:{} ", msg.getSource(), msg.getDestination());
 					handleCompleteMessage(msg.getSource());
-					logger.error("Received COMPLETED at:{} from:{} ", msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.ACKCHECKPOINT)) {
+					logger.debug("RECEIVED ACKCHECKPOINT MSG at:{} from:{}", msg.getDestination(), msg.getSource());
 					iCheckpointHandler.handleAckChpMessage(msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.ACKRECOVERY)) {
+					logger.debug("RECEIVED ACKRECOVERY MSG at:{} from:{}", msg.getDestination(), msg.getSource());
 					iRecoveryHandler.handleAckRcvMessage(msg.getSource(), msg.getDestination());
 				} else if (msg.getMsgType().equals(MessageType.APPLICATION)) {
+					logger.debug("RECEIVED APPLICATION MSG at:{} from:{} with LLR:{}", msg.getDestination(),
+							msg.getSource(), client.getLlr());
 					client.getLlr()[msg.getSource()] = msg.getValue();
 				} else {
 					logger.error("Unsupported message type : {} by the quorum handler", msg.getMsgType().toString());

@@ -32,7 +32,7 @@ public class RequestingCandidate {
 	public void start() throws InterruptedException {
 		int appCount = 1, ctrlCount = 1;
 		long timeToSend = 0;
-
+		int dest;
 		oprIterator = config.getOperationsList().iterator();
 		Operation opr = oprIterator.next();
 		opCount++;
@@ -49,12 +49,21 @@ public class RequestingCandidate {
 						&& timeToSend <= (timeToSend + getExpoRandom(config.getMinInstanceDelay())); i++) {
 					Thread.sleep(config.getMinSendDelay()); // sleep before
 															// sending
-					Message msg = new Message(nodeId, it.next(), MessageType.APPLICATION);
+					dest = it.next();
+					Message msg = new Message(nodeId, dest, appCount, MessageType.APPLICATION);
 					client.sendMsg(msg);
+
+					// updating fls of current node
+					if (client.getFls()[dest] == Integer.MIN_VALUE)
+						client.getFls()[dest] = appCount;
+
+					// updating LLS of current node
+					client.getLls()[dest] = appCount;
+
 					counter++;
 					appCount++;
 					timeToSend = System.currentTimeMillis();
-					logger.trace("Operation:{} at nodeId:{} with counter:{} and appCount:{}", i, nodeId, counter,
+					logger.debug("Operation:{} at nodeId:{} with counter:{} and appCount:{}", i, nodeId, counter,
 							appCount);
 				}
 
