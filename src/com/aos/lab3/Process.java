@@ -1,6 +1,8 @@
 package com.aos.lab3;
 
 import java.net.InetAddress;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.logging.log4j.LogManager;
@@ -31,16 +33,19 @@ public class Process {
 			Thread clientThread = new Thread(client, "client-thread");
 			Thread serverThread = new Thread(server, "server-thread");
 
+			List<Message> operationQueue = new LinkedList<Message>();
 			IApplicationStateHandler appStateHandler = new ApplicationStateHandler();
 			ICheckpointRequestHandler checkpointHandler = new CheckpointRequestHandler(client, config, nodeId,
-					appStateHandler);
+					appStateHandler, operationQueue);
 			IRecoveryRequestHandler recoveryHandler = new RecoveryRequestHandler(client, config, nodeId,
-					appStateHandler);
+					appStateHandler, operationQueue);
+			RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, checkpointHandler, recoveryHandler,
+					operationQueue);
 			server.setCheckpointHandler(checkpointHandler);
 			server.setRecovereHandler(recoveryHandler);
-			RequestingCandidate rc = new RequestingCandidate(config, nodeId, client, checkpointHandler,
-					recoveryHandler);
 			server.setReqCandidate(rc);
+			checkpointHandler.setRequestingCandidateHandler(rc);
+			recoveryHandler.setRequestingCandidateHandler(rc);
 			clientThread.start();
 			serverThread.start();
 			// Wait for other nodes to come up

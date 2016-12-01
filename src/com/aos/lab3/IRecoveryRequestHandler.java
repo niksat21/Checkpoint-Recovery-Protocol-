@@ -14,4 +14,6 @@ public interface IRecoveryRequestHandler {
 
 	public void handleAckRcvMessage(Integer source, Integer destination);
 
+	public void setRequestingCandidateHandler(RequestingCandidate rc);
+
 }

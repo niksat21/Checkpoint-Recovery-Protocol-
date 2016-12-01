@@ -12,4 +12,6 @@ public interface ICheckpointRequestHandler {
 
 	boolean isRunning();
 
+	public void setRequestingCandidateHandler(RequestingCandidate rc);
+
 }

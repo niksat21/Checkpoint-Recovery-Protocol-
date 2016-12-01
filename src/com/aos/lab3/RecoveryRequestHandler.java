@@ -2,7 +2,6 @@ package com.aos.lab3;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -21,14 +20,17 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	private Config config;
 	private Integer initiator;
 	private Set<String> operationIds = new HashSet<String>();
-	private LinkedList<Message> operationQueue = new LinkedList<Message>();
+	private List<Message> operationQueue;
+	private RequestingCandidate rc;
 
-	public RecoveryRequestHandler(Client client, Config config, Integer src, IApplicationStateHandler appStateHandler) {
+	public RecoveryRequestHandler(Client client, Config config, Integer src, IApplicationStateHandler appStateHandler,
+			List<Message> operationQueue) {
 		this.client = client;
 		this.appStateHandler = appStateHandler;
 		this.cohorts = config.getNodeIdVsNeighbors().get(src);
 		this.config = config;
 		this.initiator = src;
+		this.operationQueue = operationQueue;
 	}
 
 	@Override
@@ -48,11 +50,13 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 				doRollback(src, operationId);
 			} else {
 				logger.debug("NodeId:{} is already in recovery mode", initiator);
-				sendAckRecovery(src, dest);
+				sendAckRecovery(src, dest, operationId);
 			}
 
 		} else if (client.recover && !operationIds.contains(operationId)) {
-			operationQueue.add(msg);
+			synchronized (operationQueue) {
+				operationQueue.add(msg);
+			}
 			logger.debug("Queued msg type: {} from nodeId:{} at nodeId:{} by initiator:{}", msg.getMsgType(),
 					msg.getSource(), msg.getDestination(), msg.getInitiator());
 
@@ -60,7 +64,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 			logger.debug(
 					"Operation set in nodeId:{} already contains operationId:{}. Sending ACK to nodeId:{} initiator:{}",
 					initiator, operationId, src, msg.getInitiator());
-			sendAckRecovery(src, dest);
+			sendAckRecovery(src, dest, operationId);
 		}
 
 	}
@@ -93,9 +97,10 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		logger.debug("Initialized LLR in nodeId:{} to {}", initiator, array);
 	}
 
-	private void sendAckRecovery(int src, int dest) {
+	private void sendAckRecovery(int src, int dest, String operationId) {
 		logger.debug("Sending recovery ACK message to nodeId:{} from nodeId:{}", src, dest);
 		client.sendMsg(new Message(dest, src, MessageType.ACKRECOVERY));
+		rc.moveToNextOpr(operationId, dest);
 	}
 
 	private boolean shouldIRollback(int src, int dest, Integer lls, Integer[] llr) {
@@ -140,17 +145,12 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 				Thread.sleep(200);
 			}
 		}
-		sendAckRecovery(initiator, src);
+		sendAckRecovery(initiator, src, operationId);
 		synchronized (isRunning) {
 			isRunning = Boolean.FALSE;
 			client.recover = Boolean.FALSE;
 		}
 		logger.info("Recovery completed at nodeId:{} initiated by nodeId:{} ", initiator, src);
-
-		if (!operationQueue.isEmpty()) {
-			Message msg = operationQueue.removeFirst();
-			handleRecoveryMessage(msg, client.getLlr(), msg.getOperationId());
-		}
 	}
 
 	@Override
@@ -187,6 +187,11 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 			waitingSet.remove(source);
 			logger.debug("Waiting set in nodeId:{} is {}", initiator, waitingSet);
 		}
+	}
+
+	@Override
+	public void setRequestingCandidateHandler(RequestingCandidate rc) {
+		this.rc = rc;
 	}
 
 }
