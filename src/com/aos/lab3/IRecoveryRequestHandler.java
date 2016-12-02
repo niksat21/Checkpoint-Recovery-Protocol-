@@ -16,4 +16,7 @@ public interface IRecoveryRequestHandler {
 
 	public void setRequestingCandidateHandler(RequestingCandidate rc);
 
+	public void handleRecoveryCompletionMsg(Integer initiator, Integer source, String operationId)
+			throws InterruptedException;
+
 }

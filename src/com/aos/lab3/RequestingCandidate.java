@@ -150,10 +150,10 @@ public class RequestingCandidate {
 		StringBuilder builder = new StringBuilder();
 		if (opr.getType().equals(OperationType.CHECKPOINT)) {
 			builder.append("C-");
-		} else if (opr.getType().equals(OperationType.CHECKPOINT)) {
+		} else if (opr.getType().equals(OperationType.RECOVERY)) {
 			builder.append("R-");
 		}
-		return builder.append(opr.getNodeId()).append("-").append(ctrlCount).toString();
+		return builder.append(opr.getNodeId()).append("-").append(opCount).toString();
 	}
 
 	private static int getExpoRandom(int mean) {

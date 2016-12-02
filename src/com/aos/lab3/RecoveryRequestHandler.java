@@ -22,6 +22,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	private Set<String> operationIds = new HashSet<String>();
 	private List<Message> operationQueue;
 	private RequestingCandidate rc;
+	private Set<String> completedId = new HashSet<String>();
 
 	public RecoveryRequestHandler(Client client, Config config, Integer src, IApplicationStateHandler appStateHandler,
 			List<Message> operationQueue) {
@@ -119,8 +120,6 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		logger.debug("Broadcasting {} message from nodeId:{}", msgType.toString(), nodeId);
 		while (itr.hasNext()) {
 			dest = itr.next();
-			if (dest.equals(src))
-				continue;
 			List<Integer[]> llsList = appStateHandler.getLLS();
 			Message msg = new Message(nodeId, src, dest, llsList.get(llsList.size() - 1)[dest], msgType, operationId);
 			logger.debug("Sending {} message to nodeId:{} from nodeId:{}", msgType.toString(), dest, nodeId);
@@ -198,4 +197,34 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		this.rc = rc;
 	}
 
+	private void broadcastOpCompleteMsg(Integer initiator, String operationId) {
+		for (Integer dest : cohorts) {
+			logger.debug("Sending Operation completed msg for operationId:{} from nodeId:{} to nodeId:{}", operationId,
+					nodeId, dest);
+			Message msg = new Message(initiator, nodeId, dest, MessageType.RECOVERY_COMPLETED);
+			msg.setOperationId(operationId);
+			client.sendMsg(msg);
+		}
+		rc.moveToNextOpr(operationId, nodeId);
+	}
+
+	@Override
+	public synchronized void handleRecoveryCompletionMsg(Integer initiator, Integer source, String operationId)
+			throws InterruptedException {
+		logger.debug("Received completed msg in nodeId:{} from nodeId:{} for operationId:{}", nodeId, source,
+				operationId);
+		while (true) {
+			if (!client.tentativeCheckpoint)
+				break;
+			else
+				Thread.sleep(200);
+		}
+		if (!completedId.contains(operationId)) {
+			broadcastOpCompleteMsg(initiator, operationId);
+			completedId.add(operationId);
+		} else {
+			logger.debug("NodeId:{} already broadcasted completed msg for operationId:{} to its cohorts", nodeId,
+					operationId);
+		}
+	}
 }

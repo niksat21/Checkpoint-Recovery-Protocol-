@@ -21,6 +21,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	private Set<String> operationIds = new HashSet<String>();
 	private List<Message> operationQueue;
 	private RequestingCandidate rc;
+	private Set<String> completedId = new HashSet<String>();
 
 	CheckpointRequestHandler(Client client, Config config, Integer nodeId, IApplicationStateHandler appStateHandler,
 			List<Message> operationQueue) {
@@ -38,8 +39,6 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 		Iterator<Integer> itr = cohorts.iterator();
 		while (itr.hasNext()) {
 			dest = itr.next();
-			if (dest.equals(src))
-				continue;
 			Message msg = new Message(initiator, nodeId, dest, client.getLlr()[dest], msgType, operationId);
 			logger.debug("Sending {} message to nodeId:{} from nodeId:{}", msgType.toString(), dest, nodeId);
 			client.sendMsg(msg);
@@ -54,41 +53,40 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 
 	@Override
 	public void handleCheckpointMessage(Message msg, Integer[] fls, String operationId) throws InterruptedException {
-		synchronized (client) {
-			Integer src = msg.getSource();
-			Integer dest = msg.getDestination();
-			Integer llr = msg.getValue();
-			logger.info(
-					"HANDLECHECKPOINT! at:{} from:{} value: {} and fls:{} inside take Checkpoint with operationId:{}",
-					dest, src, llr, fls, operationId);
-			if (!client.tentativeCheckpoint && !operationIds.contains(operationId)) {
+		Integer src = msg.getSource();
+		Integer dest = msg.getDestination();
+		Integer llr = msg.getValue();
+		logger.info("HANDLECHECKPOINT! at:{} from:{} value: {} and fls:{} inside take Checkpoint with operationId:{}",
+				dest, src, llr, fls, operationId);
+		if (!client.tentativeCheckpoint && !operationIds.contains(operationId)) {
+			Boolean checkpointNeeded = canITakeCheckpoint(src, dest, llr, fls);
+			logger.info("Node :{} can take CHECKPOINT??:{}", nodeId, checkpointNeeded);
+			if (checkpointNeeded) {
 				synchronized (isRunning) {
-					isRunning = Boolean.TRUE;
-					logger.info("isRunning TRUE HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}",
-							nodeId, operationId);
+					synchronized (client) {
+						isRunning = Boolean.TRUE;
+						logger.info("isRunning TRUE HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}",
+								nodeId, operationId);
+						client.tentativeCheckpoint = Boolean.TRUE;
+					}
 				}
-				client.tentativeCheckpoint = canITakeCheckpoint(src, dest, llr, fls);
-				logger.info("Node :{} can take CHECKPOINT??:{}", nodeId, client.tentativeCheckpoint);
-				if (client.tentativeCheckpoint) {
-					takeCheckpoint(msg.getInitiator(), msg.getSource(), operationId);
-					logger.info("Node :{} took tentative checkpoint with operationId:{}", nodeId, operationId);
-				} else {
-					logger.debug("NodeId:{} is already in checkpointing process", nodeId);
-					sendAck(msg.getInitiator(), nodeId, src, MessageType.ACKCHECKPOINT, operationId);
-				}
-				logger.info("HANDLECHECKPOINT! at:{} inside takeCheckpoint with operationId:{}", nodeId, operationId);
-			} else if (client.tentativeCheckpoint && !operationIds.contains(operationId)) {
-				synchronized (operationQueue) {
-					operationQueue.add(msg);
-				}
-				logger.debug("Queued msg type: {} from nodeId:{} at nodeId:{} by initiator:{}", msg.getMsgType(),
-						msg.getSource(), msg.getDestination(), msg.getInitiator());
-			} else if (operationId.contains(operationId)) {
-				logger.debug(
-						"Operation set in nodeId:{} already contains operationId:{}. Sending ACK to nodeId:{} initiator:{}",
-						nodeId, operationId, src, msg.getInitiator());
+				takeCheckpoint(msg.getInitiator(), msg.getSource(), operationId);
+			} else {
+				logger.debug("NodeId:{} does not need to checkpoint because of initator {}", nodeId,
+						msg.getInitiator());
 				sendAck(msg.getInitiator(), nodeId, src, MessageType.ACKCHECKPOINT, operationId);
 			}
+		} else if (client.tentativeCheckpoint && !operationIds.contains(operationId)) {
+			synchronized (operationQueue) {
+				operationQueue.add(msg);
+			}
+			logger.debug("Queued msg type: {} from nodeId:{} at nodeId:{} by initiator:{}", msg.getMsgType(),
+					msg.getSource(), msg.getDestination(), msg.getInitiator());
+		} else if (operationId.contains(operationId)) {
+			logger.debug(
+					"Operation set in nodeId:{} already contains operationId:{}. Sending ACK to nodeId:{} initiator:{}",
+					nodeId, operationId, src, msg.getInitiator());
+			sendAck(msg.getInitiator(), nodeId, src, MessageType.ACKCHECKPOINT, operationId);
 		}
 	}
 
@@ -108,8 +106,10 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 			}
 			logger.info("Checkpointing completed at nodeId:{} initiated by nodeId:{}", nodeId, initiator);
 			synchronized (isRunning) {
-				isRunning = Boolean.FALSE;
-				client.tentativeCheckpoint = Boolean.FALSE;
+				synchronized (client) {
+					isRunning = Boolean.FALSE;
+					client.tentativeCheckpoint = Boolean.FALSE;
+				}
 			}
 			sendAck(initiator, nodeId, src, MessageType.ACKCHECKPOINT, operationId);
 		} else {
@@ -130,7 +130,6 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	private void sendAck(Integer initiator, Integer src, Integer dest, MessageType msgType, String operationId) {
 		logger.info("SENDACK! at:{} to:{}", nodeId, dest);
 		this.client.sendMsg(new Message(initiator, src, dest, msgType));
-		rc.moveToNextOpr(operationId, nodeId);
 	}
 
 	public boolean canITakeCheckpoint(int src, int dest, Integer llr, Integer[] fls) {
@@ -168,11 +167,41 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 					client.tentativeCheckpoint = Boolean.TRUE;
 				}
 			}
-			synchronized (client) {
-				takeCheckpoint(nodeId, nodeId, operationId);
-			}
+			takeCheckpoint(nodeId, nodeId, operationId);
+			broadcastOpCompleteMsg(nodeId, operationId);
 		} else {
 			logger.debug("NodeId:{} has already taken a tentative checkpoint", nodeId);
+		}
+	}
+
+	private void broadcastOpCompleteMsg(Integer initiator, String operationId) {
+		for (Integer dest : cohorts) {
+			logger.debug("Sending Operation completed msg for operationId:{} from nodeId:{} to nodeId:{}", operationId,
+					nodeId, dest);
+			Message msg = new Message(initiator, nodeId, dest, MessageType.CHECKPOINT_COMPLETED);
+			msg.setOperationId(operationId);
+			client.sendMsg(msg);
+		}
+		rc.moveToNextOpr(operationId, nodeId);
+	}
+
+	@Override
+	public synchronized void handleCheckpointCompletionMsg(Integer initiator, Integer source, String operationId)
+			throws InterruptedException {
+		logger.debug("Received completed msg in nodeId:{} from nodeId:{} for operationId:{}", nodeId, source,
+				operationId);
+		while (true) {
+			if (!client.tentativeCheckpoint)
+				break;
+			else
+				Thread.sleep(200);
+		}
+		if (!completedId.contains(operationId)) {
+			broadcastOpCompleteMsg(initiator, operationId);
+			completedId.add(operationId);
+		} else {
+			logger.debug("NodeId:{} already broadcasted completed msg for operationId:{} to its cohorts", nodeId,
+					operationId);
 		}
 	}
 

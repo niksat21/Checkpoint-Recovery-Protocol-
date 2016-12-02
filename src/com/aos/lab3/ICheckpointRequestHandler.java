@@ -8,6 +8,9 @@ public interface ICheckpointRequestHandler {
 
 	void handleAckChpMessage(Integer source, Integer destination);
 
+	void handleCheckpointCompletionMsg(Integer initiator, Integer source, String operationId)
+			throws InterruptedException;
+
 	void requestCheckpoint(Integer counter, String operationId) throws InterruptedException;
 
 	boolean isRunning();

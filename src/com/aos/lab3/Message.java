@@ -95,4 +95,8 @@ public class Message implements Serializable {
 		return operationId;
 	}
 
+	public void setOperationId(String operationId) {
+		this.operationId = operationId;
+	}
+
 }
