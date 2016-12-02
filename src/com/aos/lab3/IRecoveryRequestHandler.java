@@ -4,7 +4,7 @@ public interface IRecoveryRequestHandler {
 
 	public void handleRecoveryMessage(Message msg, Integer[] lls, String operationId) throws InterruptedException;
 
-	public void broadcast(Config config, Integer nodeId, MessageType msgType, String operationId);
+	public void broadcast(Config config, Integer initiator, Integer src, MessageType msgType, String operationId);
 
 	public void revert();
 

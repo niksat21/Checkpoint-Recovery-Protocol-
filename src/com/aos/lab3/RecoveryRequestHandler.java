@@ -18,7 +18,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	private Set<Integer> waitingSet = new HashSet<Integer>();
 	private Set<Integer> cohorts;
 	private Config config;
-	private Integer initiator;
+	private Integer nodeId;
 	private Set<String> operationIds = new HashSet<String>();
 	private List<Message> operationQueue;
 	private RequestingCandidate rc;
@@ -29,7 +29,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		this.appStateHandler = appStateHandler;
 		this.cohorts = config.getNodeIdVsNeighbors().get(src);
 		this.config = config;
-		this.initiator = src;
+		this.nodeId = src;
 		this.operationQueue = operationQueue;
 	}
 
@@ -41,32 +41,33 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 		logger.debug("Received recovery message from nodeId:{} in nodeId:{} with LLS:{} current LLR:{} operationId:{}",
 				src, dest, lls, llr, operationId);
-		if (!client.recover && !operationIds.contains(operationId)) {
-			client.recover = shouldIRollback(src, dest, lls, llr);
+		synchronized (client) {
+			if (!client.recover && !operationIds.contains(operationId)) {
+				client.recover = shouldIRollback(src, dest, lls, llr);
 
-			if (client.recover) {
-				// revert to old state
-				resetClientVectorsToLastCheckpointedVal();
-				doRollback(src, operationId);
-			} else {
-				logger.debug("NodeId:{} is already in recovery mode", initiator);
-				sendAckRecovery(src, dest, operationId);
+				if (client.recover) {
+					// revert to old state
+					resetClientVectorsToLastCheckpointedVal();
+					doRollback(msg.getInitiator(), src, operationId);
+				} else {
+					logger.debug("NodeId:{} is already in recovery mode", nodeId);
+					sendAckRecovery(msg.getInitiator(), nodeId, src, operationId);
+				}
+
+			} else if (client.recover && !operationIds.contains(operationId)) {
+				synchronized (operationQueue) {
+					operationQueue.add(msg);
+				}
+				logger.debug("Queued msg type: {} from nodeId:{} at nodeId:{} by initiator:{}", msg.getMsgType(),
+						msg.getSource(), msg.getDestination(), msg.getInitiator());
+
+			} else if (operationId.contains(operationId)) {
+				logger.debug(
+						"Operation set in nodeId:{} already contains operationId:{}. Sending ACK to nodeId:{} initiator:{}",
+						nodeId, operationId, src, msg.getInitiator());
+				sendAckRecovery(msg.getInitiator(), nodeId, src, operationId);
 			}
-
-		} else if (client.recover && !operationIds.contains(operationId)) {
-			synchronized (operationQueue) {
-				operationQueue.add(msg);
-			}
-			logger.debug("Queued msg type: {} from nodeId:{} at nodeId:{} by initiator:{}", msg.getMsgType(),
-					msg.getSource(), msg.getDestination(), msg.getInitiator());
-
-		} else if (operationId.contains(operationId)) {
-			logger.debug(
-					"Operation set in nodeId:{} already contains operationId:{}. Sending ACK to nodeId:{} initiator:{}",
-					initiator, operationId, src, msg.getInitiator());
-			sendAckRecovery(src, dest, operationId);
 		}
-
 	}
 
 	private void resetClientVectorsToLastCheckpointedVal() {
@@ -82,24 +83,24 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		client.setLls(lls);
 		client.setFls(fls);
 		client.setAppCounter(appCounter);
-		logger.debug("Resetting vector values in nodeId:{} to LLR:{} LLS:{} FLS:{} AppCounter:{}", initiator, llr, lls,
+		logger.debug("Resetting vector values in nodeId:{} to LLR:{} LLS:{} FLS:{} AppCounter:{}", nodeId, llr, lls,
 				fls, appCounter);
 	}
 
 	private void initLLR() {
 		List<Integer[]> LLR = appStateHandler.getLLR();
 		Integer[] array = LLR.get(LLR.size() - 1);
-		logger.debug("LLR values in nodeId:{} before reset {}", initiator, LLR);
+		logger.debug("LLR values in nodeId:{} before reset {}", nodeId, LLR);
 		for (int i = 0; i < LLR.size(); i++) {
 			array[i] = Integer.MIN_VALUE;
 		}
 		client.setLlr(array);
-		logger.debug("Initialized LLR in nodeId:{} to {}", initiator, array);
+		logger.debug("Initialized LLR in nodeId:{} to {}", nodeId, array);
 	}
 
-	private void sendAckRecovery(int src, int dest, String operationId) {
+	private void sendAckRecovery(Integer initiator, Integer src, Integer dest, String operationId) {
 		logger.debug("Sending recovery ACK message to nodeId:{} from nodeId:{}", src, dest);
-		client.sendMsg(new Message(dest, src, MessageType.ACKRECOVERY));
+		client.sendMsg(new Message(initiator, src, dest, MessageType.ACKRECOVERY));
 		rc.moveToNextOpr(operationId, dest);
 	}
 
@@ -112,31 +113,32 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	}
 
 	@Override
-	public void broadcast(Config config, Integer nodeId, MessageType msgType, String operationId) {
-		int dest;
+	public void broadcast(Config config, Integer initiator, Integer src, MessageType msgType, String operationId) {
+		Integer dest;
 		Iterator<Integer> itr = cohorts.iterator();
-		logger.debug("Broadcasting {} message from nodeId:{}", msgType.toString(), initiator);
+		logger.debug("Broadcasting {} message from nodeId:{}", msgType.toString(), nodeId);
 		while (itr.hasNext()) {
 			dest = itr.next();
+			if (dest.equals(src))
+				continue;
 			List<Integer[]> llsList = appStateHandler.getLLS();
-			Message msg = new Message(initiator, nodeId, dest, llsList.get(llsList.size() - 1)[dest], msgType,
-					operationId);
-			logger.debug("Sending {} message to nodeId:{} from nodeId:{}", msgType.toString(), dest, initiator);
+			Message msg = new Message(nodeId, src, dest, llsList.get(llsList.size() - 1)[dest], msgType, operationId);
+			logger.debug("Sending {} message to nodeId:{} from nodeId:{}", msgType.toString(), dest, nodeId);
 			client.sendMsg(msg);
 			if (msgType.equals(MessageType.RECOVERY)) {
 				synchronized (waitingSet) {
 					waitingSet.add(dest);
-					logger.debug("Waiting set of nodeId:{} is {}", initiator, waitingSet);
+					logger.debug("Waiting set of nodeId:{} is {}", nodeId, waitingSet);
 				}
 			}
 		}
 	}
 
-	private void doRollback(Integer src, String operationId) throws InterruptedException {
+	private void doRollback(Integer initiator, Integer src, String operationId) throws InterruptedException {
 		if (client.recover) {
 			operationIds.add(operationId);
 			initLLR();
-			broadcast(config, initiator, MessageType.RECOVERY, operationId);
+			broadcast(config, initiator, src, MessageType.RECOVERY, operationId);
 			while (true) {
 				synchronized (waitingSet) {
 					if (waitingSet.isEmpty())
@@ -145,12 +147,12 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 				Thread.sleep(200);
 			}
 		}
-		sendAckRecovery(initiator, src, operationId);
+		sendAckRecovery(initiator, nodeId, src, operationId);
 		synchronized (isRunning) {
 			isRunning = Boolean.FALSE;
 			client.recover = Boolean.FALSE;
 		}
-		logger.info("Recovery completed at nodeId:{} initiated by nodeId:{} ", initiator, src);
+		logger.info("Recovery completed at nodeId:{} initiated by nodeId:{} ", nodeId, initiator);
 	}
 
 	@Override
@@ -168,15 +170,17 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 	@Override
 	public void requestRecovery(String operationId) throws InterruptedException {
-		if (!client.recover && !operationIds.contains(operationId)) {
-			synchronized (isRunning) {
-				isRunning = Boolean.TRUE;
+		synchronized (client) {
+			if (!client.recover && !operationIds.contains(operationId)) {
+				synchronized (isRunning) {
+					isRunning = Boolean.TRUE;
+				}
+				client.recover = Boolean.TRUE;
+				resetClientVectorsToLastCheckpointedVal();
+				doRollback(nodeId, nodeId, operationId);
+			} else {
+				logger.debug("Something wrong in nodeId:{}", nodeId);
 			}
-			client.recover = Boolean.TRUE;
-			resetClientVectorsToLastCheckpointedVal();
-			doRollback(initiator, operationId);
-		} else {
-			logger.debug("Something wrong in nodeId:{}", initiator);
 		}
 	}
 
@@ -185,7 +189,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		logger.debug("Received ACK for recovery msg in nodeId:{} from nodeId:{}", destination, source);
 		synchronized (waitingSet) {
 			waitingSet.remove(source);
-			logger.debug("Waiting set in nodeId:{} is {}", initiator, waitingSet);
+			logger.debug("Waiting set in nodeId:{} is {}", nodeId, waitingSet);
 		}
 	}
 

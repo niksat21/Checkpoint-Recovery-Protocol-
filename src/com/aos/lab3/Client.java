@@ -30,7 +30,7 @@ public class Client implements Runnable {
 	private Integer appCounter = 0;
 
 	private int noOfNodes;
-	boolean tentativeCheckpoint = false;
+	Boolean tentativeCheckpoint = Boolean.FALSE;
 	boolean recover = false;
 
 	public Client(String nodeHostname, int labelValue, Config config, Integer nodeId) {
