@@ -79,35 +79,39 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	}
 
 	private void resetClientVectorsToLastCheckpointedVal() {
-		List<Integer[]> llrList = appStateHandler.getLLR();
-		List<Integer[]> llsList = appStateHandler.getLLS();
-		List<Integer[]> flsList = appStateHandler.getFLS();
-		List<Integer> appValues = appStateHandler.getAppValues();
-		Integer[] llr = llrList.get(llrList.size() - 1);
-		Integer[] lls = llsList.get(llsList.size() - 1);
-		Integer[] fls = flsList.get(flsList.size() - 1);
-		Integer appCounter = appValues.get(appValues.size() - 1);
-		client.setLlr(llr);
-		client.setLls(lls);
-		client.setFls(fls);
-		client.setAppCounter(appCounter);
-		logger.debug("Resetting vector values in nodeId:{} to LLR:{} LLS:{} FLS:{} AppCounter:{}", nodeId, llr, lls,
-				fls, appCounter);
+		synchronized (appStateHandler) {
+			List<Integer[]> llrList = appStateHandler.getLLR();
+			List<Integer[]> llsList = appStateHandler.getLLS();
+			List<Integer[]> flsList = appStateHandler.getFLS();
+			List<Integer> appValues = appStateHandler.getAppValues();
+			Integer[] llr = llrList.get(llrList.size() - 1);
+			Integer[] lls = llsList.get(llsList.size() - 1);
+			Integer[] fls = flsList.get(flsList.size() - 1);
+			Integer appCounter = appValues.get(appValues.size() - 1);
+			client.setLlr(llr);
+			client.setLls(lls);
+			client.setFls(fls);
+			client.setAppCounter(appCounter);
+			logger.debug("Resetting vector values in nodeId:{} to LLR:{} LLS:{} FLS:{} AppCounter:{}", nodeId, llr, lls,
+					fls, appCounter);
+		}
 	}
 
 	private void initLLR() {
-		// reset client or appStateHandler?
-		List<Integer[]> LLR = appStateHandler.getLLR();
-		Integer[] array = LLR.get(LLR.size() - 1);
+		synchronized (appStateHandler) {
+			// reset client or appStateHandler?
+			List<Integer[]> LLR = appStateHandler.getLLR();
+			Integer[] array = LLR.get(LLR.size() - 1);
 
-		// remove previous LLR values from ASH to reset
-		LLR.remove(LLR.size() - 1);
-		logger.debug("LLR values in nodeId:{} before reset {}", nodeId, LLR);
-		for (int i = 0; i < LLR.size(); i++) {
-			array[i] = Integer.MIN_VALUE;
+			// remove previous LLR values from ASH to reset
+			LLR.remove(LLR.size() - 1);
+			logger.debug("LLR values in nodeId:{} before reset {}", nodeId, LLR);
+			for (int i = 0; i < LLR.size(); i++) {
+				array[i] = Integer.MIN_VALUE;
+			}
+			appStateHandler.storeLLR(array);
+			logger.debug("Initialized LLR in nodeId:{} to {}", nodeId, array);
 		}
-		appStateHandler.storeLLR(array);
-		logger.debug("Initialized LLR in nodeId:{} to {}", nodeId, array);
 	}
 
 	private void sendAckRecovery(Integer initiator, Integer src, Integer dest, String operationId) {

@@ -118,13 +118,15 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	}
 
 	private void saveState() {
-		logger.debug("Saving vector values in nodeId:{}. LLR:{} LLS:{} FLS:{}", nodeId, client.getLlr(),
-				client.getLls(), client.getFls());
-		appStateHandler.getAppValues().add(client.getAppCounter());
-		appStateHandler.getLLR().add(client.getLlr());
-		appStateHandler.getLLS().add(client.getLls());
-		appStateHandler.getFLS().add(client.getFls());
-		logger.info("SAVED STATE! at:{}", client.getNodeId());
+		synchronized (appStateHandler) {
+			logger.debug("Saving vector values in nodeId:{}. LLR:{} LLS:{} FLS:{}", nodeId, client.getLlr(),
+					client.getLls(), client.getFls());
+			appStateHandler.getAppValues().add(client.getAppCounter());
+			appStateHandler.getLLR().add(client.getLlr());
+			appStateHandler.getLLS().add(client.getLls());
+			appStateHandler.getFLS().add(client.getFls());
+			logger.info("SAVED STATE! at:{}", client.getNodeId());
+		}
 	}
 
 	private void sendAck(Integer initiator, Integer src, Integer dest, MessageType msgType, String operationId) {
