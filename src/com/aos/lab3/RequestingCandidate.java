@@ -128,16 +128,21 @@ public class RequestingCandidate {
 				Thread.sleep(200);
 			}
 		}
+
+		// termination detection initiation
+		client.broadcastCompletionMsg();
 	}
 
 	public synchronized void moveToNextOpr(String operationId, Integer initiator) {
 		String oprId = getOperationId(opr);
 		if (oprId.equals(operationId)) {
 			logger.debug("Moving to the next operation in nodeId:{}", nodeId);
-			opr = oprIterator.next();
-			opCount++;
-			ctrlCount++;
-			flag = Boolean.TRUE;
+			if (oprIterator.hasNext()) {
+				opr = oprIterator.next();
+				opCount++;
+				ctrlCount++;
+				flag = Boolean.TRUE;
+			}
 		} else {
 			logger.debug("OperationId in the msg:{} did not match the current operationId:{} in nodeId:{}", operationId,
 					oprId, nodeId);
