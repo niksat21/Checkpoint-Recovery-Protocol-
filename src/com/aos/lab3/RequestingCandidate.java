@@ -108,12 +108,10 @@ public class RequestingCandidate {
 				if (nodeId.equals(opr.getNodeId())) {
 					if (opr.getType().equals(OperationType.CHECKPOINT)) {
 						logger.debug("NodeId:{} initiated CHECKPOINT req with ctrlCount{}", nodeId, ctrlCount);
-						checkpointHandler.requestCheckpoint(counter, "C-" + nodeId + "-" + opCount);
-						ctrlCount++;
+						checkpointHandler.requestCheckpoint(counter, "C-" + nodeId + "-" + ctrlCount);
 					} else if (opr.getType().equals(OperationType.RECOVERY)) {
 						logger.debug("NodeId:{} initiated RECOVERY req with ctrlCount{}", nodeId, ctrlCount);
 						recoveryHandler.requestRecovery("R-" + nodeId + "-" + opCount);
-						ctrlCount++;
 					} else {
 						logger.error("Unsupported operation type: {}", opr.toString());
 					}
