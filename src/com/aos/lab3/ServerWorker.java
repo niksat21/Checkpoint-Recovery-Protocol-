@@ -95,7 +95,7 @@ public class ServerWorker implements Runnable {
 				} else if (msg.getMsgType().equals(MessageType.CHECKPOINT_COMPLETED)) {
 					iCheckpointHandler.handleCheckpointCompletionMsg(msg.getInitiator(), msg.getSource(),
 							msg.getOperationId());
-				} else if (msg.getMsgType().equals(MessageType.CHECKPOINT_COMPLETED)) {
+				} else if (msg.getMsgType().equals(MessageType.RECOVERY_COMPLETED)) {
 					iRecoveryHandler.handleRecoveryCompletionMsg(msg.getInitiator(), msg.getSource(),
 							msg.getOperationId());
 				} else {
