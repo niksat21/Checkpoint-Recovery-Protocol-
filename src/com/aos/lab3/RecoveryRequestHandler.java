@@ -135,7 +135,8 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		while (itr.hasNext()) {
 			dest = itr.next();
 			List<Integer[]> llsList = appStateHandler.getLLS();
-			Message msg = new Message(nodeId, src, dest, llsList.get(llsList.size() - 1)[dest], msgType, operationId);
+			Message msg = new Message(initiator, nodeId, dest, llsList.get(llsList.size() - 1)[dest], msgType,
+					operationId);
 			logger.debug("Sending {} message to nodeId:{} from nodeId:{}", msgType.toString(), dest, nodeId);
 			client.sendMsg(msg);
 			if (msgType.equals(MessageType.RECOVERY)) {
