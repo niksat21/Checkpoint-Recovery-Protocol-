@@ -42,32 +42,39 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 		logger.debug("Received recovery message from nodeId:{} in nodeId:{} with LLS:{} current LLR:{} operationId:{}",
 				src, dest, lls, llr, operationId);
-		synchronized (client) {
-			if (!client.recover && !operationIds.contains(operationId)) {
-				client.recover = shouldIRollback(src, dest, lls, llr);
-
-				if (client.recover) {
-					// revert to old state
-					resetClientVectorsToLastCheckpointedVal();
-					doRollback(msg.getInitiator(), src, operationId);
-				} else {
-					logger.debug("NodeId:{} is already in recovery mode", nodeId);
-					sendAckRecovery(msg.getInitiator(), nodeId, src, operationId);
+		if (!client.recover && !operationIds.contains(operationId)) {
+			Boolean recoveryNeeded = shouldIRollback(src, dest, lls, llr);
+			logger.info("Node :{} can take RECOVER??:{}", nodeId, recoveryNeeded);
+			if (recoveryNeeded) {
+				synchronized (isRunning) {
+					synchronized (client) {
+						isRunning = Boolean.TRUE;
+						logger.info("isRunning TRUE RECOVERY! at:{} inside doRollback with operationId:{}", nodeId,
+								operationId);
+						client.recover = Boolean.TRUE;
+					}
 				}
 
-			} else if (client.recover && !operationIds.contains(operationId)) {
-				synchronized (operationQueue) {
-					operationQueue.add(msg);
-				}
-				logger.debug("Queued msg type: {} from nodeId:{} at nodeId:{} by initiator:{}", msg.getMsgType(),
-						msg.getSource(), msg.getDestination(), msg.getInitiator());
-
-			} else if (operationId.contains(operationId)) {
-				logger.debug(
-						"Operation set in nodeId:{} already contains operationId:{}. Sending ACK to nodeId:{} initiator:{}",
-						nodeId, operationId, src, msg.getInitiator());
+				// revert to old state
+				initLLR();
+				resetClientVectorsToLastCheckpointedVal();
+				doRollback(msg.getInitiator(), src, operationId);
+			} else {
+				logger.debug("NodeId:{} is already in recovery mode", nodeId);
 				sendAckRecovery(msg.getInitiator(), nodeId, src, operationId);
 			}
+		} else if (client.recover && !operationIds.contains(operationId)) {
+			synchronized (operationQueue) {
+				operationQueue.add(msg);
+			}
+			logger.debug("Queued msg type: {} from nodeId:{} at nodeId:{} by initiator:{}", msg.getMsgType(),
+					msg.getSource(), msg.getDestination(), msg.getInitiator());
+
+		} else if (operationId.contains(operationId)) {
+			logger.debug(
+					"Operation set in nodeId:{} already contains operationId:{}. Sending ACK to nodeId:{} initiator:{}",
+					nodeId, operationId, src, msg.getInitiator());
+			sendAckRecovery(msg.getInitiator(), nodeId, src, operationId);
 		}
 	}
 
@@ -89,20 +96,23 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	}
 
 	private void initLLR() {
+		// reset client or appStateHandler?
 		List<Integer[]> LLR = appStateHandler.getLLR();
 		Integer[] array = LLR.get(LLR.size() - 1);
+
+		// remove previous LLR values from ASH to reset
+		LLR.remove(LLR.size() - 1);
 		logger.debug("LLR values in nodeId:{} before reset {}", nodeId, LLR);
 		for (int i = 0; i < LLR.size(); i++) {
 			array[i] = Integer.MIN_VALUE;
 		}
-		client.setLlr(array);
+		appStateHandler.storeLLR(array);
 		logger.debug("Initialized LLR in nodeId:{} to {}", nodeId, array);
 	}
 
 	private void sendAckRecovery(Integer initiator, Integer src, Integer dest, String operationId) {
 		logger.debug("Sending recovery ACK message to nodeId:{} from nodeId:{}", src, dest);
-		client.sendMsg(new Message(initiator, src, dest, MessageType.ACKRECOVERY));
-		rc.moveToNextOpr(operationId, dest);
+		this.client.sendMsg(new Message(initiator, src, dest, MessageType.ACKRECOVERY));
 	}
 
 	private boolean shouldIRollback(int src, int dest, Integer lls, Integer[] llr) {
@@ -136,7 +146,6 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 	private void doRollback(Integer initiator, Integer src, String operationId) throws InterruptedException {
 		if (client.recover) {
 			operationIds.add(operationId);
-			initLLR();
 			broadcast(config, initiator, src, MessageType.RECOVERY, operationId);
 			while (true) {
 				synchronized (waitingSet) {
@@ -145,19 +154,15 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 				}
 				Thread.sleep(200);
 			}
+			synchronized (isRunning) {
+				synchronized (client) {
+					isRunning = Boolean.FALSE;
+					client.recover = Boolean.FALSE;
+				}
+			}
+			sendAckRecovery(initiator, nodeId, src, operationId);
+			logger.info("Recovery completed at nodeId:{} initiated by nodeId:{} ", nodeId, initiator);
 		}
-		sendAckRecovery(initiator, nodeId, src, operationId);
-		synchronized (isRunning) {
-			isRunning = Boolean.FALSE;
-			client.recover = Boolean.FALSE;
-		}
-		logger.info("Recovery completed at nodeId:{} initiated by nodeId:{} ", nodeId, initiator);
-	}
-
-	@Override
-	public void revert() {
-		// revert vectors to old state
-
 	}
 
 	@Override
@@ -169,17 +174,19 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 	@Override
 	public void requestRecovery(String operationId) throws InterruptedException {
-		synchronized (client) {
-			if (!client.recover && !operationIds.contains(operationId)) {
-				synchronized (isRunning) {
+		if (!client.recover && !operationIds.contains(operationId)) {
+			synchronized (isRunning) {
+				synchronized (client) {
 					isRunning = Boolean.TRUE;
+					client.recover = Boolean.TRUE;
 				}
-				client.recover = Boolean.TRUE;
-				resetClientVectorsToLastCheckpointedVal();
-				doRollback(nodeId, nodeId, operationId);
-			} else {
-				logger.debug("Something wrong in nodeId:{}", nodeId);
 			}
+			initLLR();
+			resetClientVectorsToLastCheckpointedVal();
+			doRollback(nodeId, nodeId, operationId);
+			broadcastOpCompleteMsg(nodeId, operationId);
+		} else {
+			logger.debug("Something wrong in nodeId:{}", nodeId);
 		}
 	}
 
@@ -214,7 +221,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		logger.debug("Received completed msg in nodeId:{} from nodeId:{} for operationId:{}", nodeId, source,
 				operationId);
 		while (true) {
-			if (!client.tentativeCheckpoint)
+			if (!client.recover)
 				break;
 			else
 				Thread.sleep(200);
