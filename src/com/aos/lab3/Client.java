@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -130,13 +131,14 @@ public class Client implements Runnable {
 	}
 
 	public void broadcastCompletionMsg() {
-		List<Node> nodeList = config.getNodes();
-		for (Node node : nodeList) {
+		Set<Integer> cohorts = config.getNodeIdVsNeighbors().get(nodeId);
+		for (Integer node : cohorts) {
 			// Ignore sending the completion message to itself
-			if (node.getNodeId().equals(nodeId))
+			if (node.equals(nodeId))
 				continue;
-			Message msg = new Message(nodeId, node.getNodeId(), MessageType.COMPLETED);
+			Message msg = new Message(nodeId, node, MessageType.COMPLETED);
 			sendMsg(msg);
+
 		}
 
 	}

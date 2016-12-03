@@ -130,7 +130,8 @@ public class RequestingCandidate {
 		}
 
 		// termination detection initiation
-		client.broadcastCompletionMsg();
+		logger.info("Done with all operations at nodeId:{}!", nodeId);
+
 	}
 
 	public synchronized void moveToNextOpr(String operationId, Integer initiator) {
