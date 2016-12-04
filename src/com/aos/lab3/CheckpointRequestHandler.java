@@ -95,6 +95,8 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 			operationIds.add(operationId);
 			saveState();
 			logger.info("SAVED STATED! at:{} inside takeCheckpoint with operationId:{}", nodeId, operationId);
+			logger.debug("Operation completed in NodeId:{} OperationId:{} FLS:{} LLR:{} LLS:{} Neighbors:{}", nodeId,
+					operationId, appStateHandler.getFLS(), appStateHandler.getLLR(), appStateHandler.getLLS(), cohorts);
 			client.initVectors();
 			broadcast(config, initiator, src, MessageType.CHECKPOINT, operationId);
 			while (true) {

@@ -58,6 +58,9 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 				// revert to old state
 				initLLR();
 				resetClientVectorsToLastCheckpointedVal();
+				logger.debug("Operation completed in NodeId:{} OperationId:{} FLS:{} LLR:{} LLS:{} Neighbors:{}",
+						nodeId, operationId, appStateHandler.getFLS(), appStateHandler.getLLR(),
+						appStateHandler.getLLS(), cohorts);
 				doRollback(msg.getInitiator(), src, operationId);
 			} else {
 				logger.debug("NodeId:{} is already in recovery mode", nodeId);
