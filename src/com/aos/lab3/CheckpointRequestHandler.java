@@ -93,7 +93,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 	private void takeCheckpoint(Integer initiator, Integer src, String operationId) throws InterruptedException {
 		if (client.tentativeCheckpoint) {
 			operationIds.add(operationId);
-			saveState();
+			saveState(operationId);
 			logger.info("SAVED STATED! at:{} inside takeCheckpoint with operationId:{}", nodeId, operationId);
 			logger.debug("Operation completed in NodeId:{} OperationId:{} FLS:{} LLR:{} LLS:{} Neighbors:{}", nodeId,
 					operationId, appStateHandler.getFLS(), appStateHandler.getLLR(), appStateHandler.getLLS(), cohorts);
@@ -119,7 +119,7 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 		}
 	}
 
-	private void saveState() {
+	private void saveState(String operationId) {
 		synchronized (appStateHandler) {
 			logger.debug("Saving vector values in nodeId:{}. LLR:{} LLS:{} FLS:{}", nodeId, client.getLlr(),
 					client.getLls(), client.getFls());
@@ -128,6 +128,8 @@ public class CheckpointRequestHandler implements ICheckpointRequestHandler {
 			appStateHandler.getLLS().add(client.getLls());
 			appStateHandler.getFLS().add(client.getFls());
 			logger.info("SAVED STATE! at:{}", client.getNodeId());
+			logger.debug("Operation completed in NodeId:{} OperationId:{} FLS:{} LLR:{} LLS:{} Neighbors:{}", nodeId,
+					operationId, appStateHandler.getFLS(), appStateHandler.getLLR(), appStateHandler.getLLS(), cohorts);
 		}
 	}
 

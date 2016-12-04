@@ -57,10 +57,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 
 				// revert to old state
 				initLLR();
-				resetClientVectorsToLastCheckpointedVal();
-				logger.debug("Operation completed in NodeId:{} OperationId:{} FLS:{} LLR:{} LLS:{} Neighbors:{}",
-						nodeId, operationId, appStateHandler.getFLS(), appStateHandler.getLLR(),
-						appStateHandler.getLLS(), cohorts);
+				resetClientVectorsToLastCheckpointedVal(operationId);
 				doRollback(msg.getInitiator(), src, operationId);
 			} else {
 				logger.debug("NodeId:{} is already in recovery mode", nodeId);
@@ -81,7 +78,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 		}
 	}
 
-	private void resetClientVectorsToLastCheckpointedVal() {
+	private void resetClientVectorsToLastCheckpointedVal(String operationId) {
 		synchronized (appStateHandler) {
 			List<Integer[]> llrList = appStateHandler.getLLR();
 			List<Integer[]> llsList = appStateHandler.getLLS();
@@ -97,6 +94,8 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 			client.setAppCounter(appCounter);
 			logger.debug("Resetting vector values in nodeId:{} to LLR:{} LLS:{} FLS:{} AppCounter:{}", nodeId, llr, lls,
 					fls, appCounter);
+			logger.debug("Operation completed in NodeId:{} OperationId:{} FLS:{} LLR:{} LLS:{} Neighbors:{}", nodeId,
+					operationId, appStateHandler.getFLS(), appStateHandler.getLLR(), appStateHandler.getLLS(), cohorts);
 		}
 	}
 
@@ -190,7 +189,7 @@ public class RecoveryRequestHandler implements IRecoveryRequestHandler {
 				}
 			}
 			initLLR();
-			resetClientVectorsToLastCheckpointedVal();
+			resetClientVectorsToLastCheckpointedVal(operationId);
 			doRollback(nodeId, nodeId, operationId);
 			broadcastOpCompleteMsg(nodeId, operationId);
 		} else {
