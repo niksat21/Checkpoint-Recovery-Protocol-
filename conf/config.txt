@@ -1,4 +1,4 @@
-5 10 100 10 2000
+5 10 100 10 500
 0 dc02.utdallas.edu 7234
 1 dc03.utdallas.edu 7233
 2 dc04.utdallas.edu 7233
